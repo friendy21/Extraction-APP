@@ -97,14 +97,6 @@ export default function LoginForm() {
             error={errors.password?.message}
             {...register("password")}
           />
-          <div className="text-right mt-1">
-            <Link
-              href="/forgot-password"
-              className="text-sm text-blue-600 hover:text-blue-800"
-            >
-              Forgot your password?
-            </Link>
-          </div>
         </div>
         
         <Button

@@ -22,7 +22,7 @@ const handler = NextAuth({
         try {
           const { email, password } = loginSchema.parse(credentials);
 
-          if (email === "user@example.com" && password === "password123") {
+          if (email === "admin123@glynac.ai" && password === "admin123") {
             return {
               id: "1",
               email,
