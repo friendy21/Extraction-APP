@@ -116,7 +116,7 @@ const DataOverviewPage = () => {
     const meetingCount = 50 + (id * 3) % 100;
     const fileAccessCount = 100 + (id * 17) % 300;
     
-    // Generate inclusion status (most employees are included by default)
+    // Generate inclusion status 
     const isIncluded = id % 13 !== 0;
     
     return {

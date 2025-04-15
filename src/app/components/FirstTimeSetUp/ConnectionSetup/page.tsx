@@ -5,13 +5,30 @@ import { useState, useEffect } from "react";
 import { Button } from "../../ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../../ui/card"
 import { Badge } from "../../ui/badge"
-import { CheckCircle2, Cloud, Cog, ExternalLink, Plus, RefreshCw, Settings, X, Eye, EyeOff } from "lucide-react"
+import { 
+  CheckCircle2, 
+  Cloud, 
+  Cog, 
+  ExternalLink, 
+  Plus, 
+  RefreshCw, 
+  Settings, 
+  X, 
+  Eye, 
+  EyeOff,
+  Info,
+  AlertTriangle,
+  Loader2
+} from "lucide-react"
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useStep } from '../StepContext'
 import { Input } from "../../ui/input"
 import { Label } from "../../ui/label"
 import { Textarea } from "../../ui/textarea"
+import { Tooltip } from "../../ui/tooltip"
+import { TooltipContent, TooltipProvider, TooltipTrigger } from "../../ui/tooltip"
+import { toast } from "sonner"
 
 // Define a type for the connection status
 type ConnectionStatus = {
@@ -20,6 +37,16 @@ type ConnectionStatus = {
   dropbox: boolean;
   slack: boolean;
   zoom: boolean;
+  jira: boolean;
+};
+
+// Define type for connection stats
+type ConnectionStats = {
+  connection_id: string;
+  status: string;
+  last_connected_at: string;
+  created_at: string;
+  error?: string;
 };
 
 // Define type for custom APIs
@@ -31,6 +58,8 @@ type CustomAPI = {
   apiKey: string;
   headers: string;
   authType: string;
+  connectionId?: string;
+  stats?: ConnectionStats;
 };
 
 // Define configuration form data types
@@ -46,6 +75,7 @@ type GoogleWorkspaceConfig = {
   clientSecret: string;
   redirectUri: string;
   scope: string;
+  accountId: string;
 };
 
 type DropboxConfig = {
@@ -59,12 +89,200 @@ type SlackConfig = {
   clientSecret: string;
   redirectUri: string;
   scopes: string;
+  workspaceId: string;
 };
 
 type ZoomConfig = {
   clientId: string;
   clientSecret: string;
   redirectUri: string;
+  accountId: string;
+};
+
+type JiraConfig = {
+  clientId: string;
+  clientSecret: string;
+  redirectUri: string;
+  instanceUrl: string;
+};
+
+// Mock Connection Stats
+const MOCK_STATS: Record<string, ConnectionStats> = {
+  microsoft365: {
+    connection_id: "ms-conn-12345",
+    status: "connected",
+    last_connected_at: new Date().toISOString(),
+    created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days ago
+  },
+  googleWorkspace: {
+    connection_id: "google-conn-67890",
+    status: "connected",
+    last_connected_at: new Date().toISOString(),
+    created_at: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(), // 14 days ago
+  },
+  dropbox: {
+    connection_id: "dropbox-conn-abcde",
+    status: "connected",
+    last_connected_at: new Date().toISOString(),
+    created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago
+  },
+  slack: {
+    connection_id: "slack-conn-fghij",
+    status: "connected",
+    last_connected_at: new Date().toISOString(),
+    created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days ago
+  },
+  zoom: {
+    connection_id: "zoom-conn-klmno",
+    status: "connected",
+    last_connected_at: new Date().toISOString(),
+    created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
+  },
+  jira: {
+    connection_id: "jira-conn-pqrst",
+    status: "connected",
+    last_connected_at: new Date().toISOString(),
+    created_at: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(), // 10 days ago
+  },
+  customAPI1: {
+    connection_id: "custom-conn-12345",
+    status: "connected",
+    last_connected_at: new Date().toISOString(),
+    created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
+  },
+  customAPI2: {
+    connection_id: "custom-conn-67890",
+    status: "connected",
+    last_connected_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
+    created_at: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(), // 4 days ago
+  },
+  customAPI3: {
+    connection_id: "custom-conn-abcde",
+    status: "connected",
+    last_connected_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(), // 30 mins ago
+    created_at: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(), // 6 days ago
+  }
+};
+
+// API client for connection endpoints
+const ConnectionAPI = {
+  // Create/configure a connection
+  createConnection: async (service: string, config: any): Promise<{ connection_id: string, status: string }> => {
+    console.log(`Creating ${service} connection with config:`, config);
+    return {
+      connection_id: `${service}-conn-${Math.random().toString(36).substring(2, 7)}`,
+      status: "configured"
+    };
+  },
+  
+  // Get connection stats
+  getConnectionStats: async (connectionId: string): Promise<ConnectionStats> => {
+    console.log(`Getting stats for connection: ${connectionId}`);
+    let serviceKey = Object.keys(MOCK_STATS).find(key => 
+      MOCK_STATS[key].connection_id === connectionId
+    );
+    return serviceKey ? MOCK_STATS[serviceKey] : {
+      connection_id: connectionId,
+      status: "connected",
+      last_connected_at: new Date().toISOString(),
+      created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+    };
+  },
+  
+  // Initiate a connection
+  connect: async (connectionId: string): Promise<{ connection_id: string, status: string, error?: string }> => {
+    console.log(`Connecting with ID: ${connectionId}`);
+    await new Promise(resolve => setTimeout(resolve, 500));
+    return {
+      connection_id: connectionId,
+      status: "connected"
+    };
+  },
+
+  // **New Method: Test Connection**
+  testConnection: async (service: string, config: any): Promise<{ success: boolean; message: string }> => {
+    console.log(`Testing connection for ${service} with config:`, config);
+    let isValid = false;
+    let message = "Invalid credentials";
+
+    if (service === 'customapi') {
+      if (config.api_url && config.api_key && config.auth_type) {
+        isValid = true;
+        message = "Connection successful";
+      } else {
+        message = "Missing required fields";
+      }
+    } else {
+      switch (service) {
+        case 'microsoft365':
+          if (
+            config.client_id?.startsWith('ms-client-') &&
+            config.client_secret?.startsWith('ms-secret-') &&
+            config.tenant_id?.startsWith('tenant-')
+          ) {
+            isValid = true;
+            message = "Connection successful";
+          }
+          break;
+        case 'googleWorkspace':
+          if (
+            config.client_id?.startsWith('google-client-') &&
+            config.client_secret?.startsWith('google-secret-') &&
+            config.account_id?.endsWith('.com')
+          ) {
+            isValid = true;
+            message = "Connection successful";
+          }
+          break;
+        case 'dropbox':
+          if (
+            config.app_key?.startsWith('dropbox-app-') &&
+            config.client_secret?.startsWith('dropbox-secret-')
+          ) {
+            isValid = true;
+            message = "Connection successful";
+          }
+          break;
+        case 'slack':
+          if (
+            config.client_id?.startsWith('slack-client-') &&
+            config.client_secret?.startsWith('slack-secret-') &&
+            config.workspace_id?.startsWith('T')
+          ) {
+            isValid = true;
+            message = "Connection successful";
+          }
+          break;
+        case 'zoom':
+          if (
+            config.client_id?.startsWith('zoom-client-') &&
+            config.client_secret?.startsWith('zoom-secret-') &&
+            config.account_id?.startsWith('zoom-account-')
+          ) {
+            isValid = true;
+            message = "Connection successful";
+          }
+          break;
+        case 'jira':
+          if (
+            config.client_id?.startsWith('jira-client-') &&
+            config.client_secret?.startsWith('jira-secret-') &&
+            config.instance_url?.startsWith('https://')
+          ) {
+            isValid = true;
+            message = "Connection successful";
+          }
+          break;
+        default:
+          isValid = false;
+          message = "Service not supported";
+      }
+    }
+
+    // Simulate a longer delay to mimic an API call
+    await new Promise(resolve => setTimeout(resolve, 2500));
+    return { success: isValid, message };
+  },
 };
 
 // Modal component for configuration forms
@@ -87,6 +305,74 @@ const ConfigModal: React.FC<{
         </div>
         <div className="p-4">
           {children}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Stats Modal component
+const StatsModal: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+  stats: ConnectionStats | null;
+  isLoading: boolean;
+}> = ({ isOpen, onClose, title, stats, isLoading }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+        <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+          <h3 className="font-semibold text-lg">{title} Statistics</h3>
+          <Button variant="ghost" size="sm" onClick={onClose}>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+        <div className="p-4">
+          {isLoading ? (
+            <div className="flex justify-center py-8">
+              <RefreshCw className="h-8 w-8 animate-spin text-gray-400" />
+            </div>
+          ) : stats ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-2">
+                <div className="text-sm font-medium text-gray-500">Connection ID:</div>
+                <div className="text-sm">{stats.connection_id}</div>
+                
+                <div className="text-sm font-medium text-gray-500">Status:</div>
+                <div className="text-sm">
+                  <Badge 
+                    variant={stats.status === "connected" ? "green" : "red"}
+                    className="text-center"
+                  >
+                    {stats.status}
+                  </Badge>
+                </div>
+                
+                <div className="text-sm font-medium text-gray-500">Last Connected:</div>
+                <div className="text-sm">{new Date(stats.last_connected_at).toLocaleString()}</div>
+                
+                <div className="text-sm font-medium text-gray-500">Created:</div>
+                <div className="text-sm">{new Date(stats.created_at).toLocaleString()}</div>
+                
+                {stats.error && (
+                  <>
+                    <div className="text-sm font-medium text-gray-500">Error:</div>
+                    <div className="text-sm text-red-500">{stats.error}</div>
+                  </>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="py-4 text-center text-gray-500">
+              No statistics available for this connection.
+            </div>
+          )}
+        </div>
+        <div className="p-4 border-t border-gray-200 flex justify-end">
+          <Button variant="outline" size="sm" onClick={onClose}>Close</Button>
         </div>
       </div>
     </div>
@@ -133,9 +419,10 @@ const CustomAPICard: React.FC<{
   onConnect: () => void;
   onDisconnect: () => void;
   onSettings: () => void;
+  onStats: () => void;
   onRename: (newName: string) => void;
   onDelete: () => void;
-}> = ({ api, onConnect, onDisconnect, onSettings, onRename, onDelete }) => {
+}> = ({ api, onConnect, onDisconnect, onSettings, onStats, onRename, onDelete }) => {
   const [isRenaming, setIsRenaming] = useState(false);
   const [newName, setNewName] = useState(api.name);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -204,6 +491,9 @@ const CustomAPICard: React.FC<{
       <CardContent>
         <div className="text-sm text-muted-foreground">
           <p>Custom API endpoint for {api.name}</p>
+          {api.connectionId && (
+            <p className="mt-1 text-xs">Connection ID: {api.connectionId}</p>
+          )}
         </div>
       </CardContent>
       <CardFooter className="flex justify-between">
@@ -224,6 +514,14 @@ const CustomAPICard: React.FC<{
               onClick={onSettings}
             >
               <Settings className="h-4 w-4" />
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="ml-2 cursor-pointer"
+              onClick={onStats}
+            >
+              <Info className="h-4 w-4" />
             </Button>
           </>
         ) : (
@@ -265,66 +563,85 @@ const CustomAPICard: React.FC<{
 };
 
 const ConnectionPage: React.FC = () => {
-  // State to manage connection status
   const [connections, setConnections] = useState<ConnectionStatus>({
     microsoft365: false,
     googleWorkspace: false,
     dropbox: false,
     slack: false,
     zoom: false,
+    jira: false,
   });
 
-  // State for custom APIs
+  const [connectionIds, setConnectionIds] = useState<Record<string, string>>({
+    microsoft365: '',
+    googleWorkspace: MOCK_STATS.googleWorkspace.connection_id,
+    dropbox: MOCK_STATS.dropbox.connection_id,
+    slack: MOCK_STATS.slack.connection_id,
+    zoom: MOCK_STATS.zoom.connection_id,
+    jira: MOCK_STATS.jira.connection_id,
+  });
+
+  const [activeStats, setActiveStats] = useState<ConnectionStats | null>(null);
+  const [isLoadingStats, setIsLoadingStats] = useState(false);
+  const [isTestingConnection, setIsTestingConnection] = useState(false);
+
   const [customAPIs, setCustomAPIs] = useState<CustomAPI[]>([
     {
       id: "api1",
-      name: "Custom API",
+      name: "Analytics Service",
       isConnected: false,
-      apiUrl: '',
-      apiKey: '',
-      headers: '{"Content-Type": "application/json"}',
-      authType: 'Bearer',
+      apiUrl: 'https://analytics.example.io/collect',
+      apiKey: 'analytics-key-f45de78ab',
+      headers: '{"Content-Type": "application/json", "User-Agent": "ConnectorApp/1.0"}',
+      authType: 'ApiKey',
+      connectionId: MOCK_STATS.customAPI3.connection_id,
     }
   ]);
 
-  // State to track which modal is visible
   const [activeModal, setActiveModal] = useState<string | null>(null);
-  
-  // State to track which API is being edited
   const [editingApiId, setEditingApiId] = useState<string | null>(null);
 
-  // Form data states
   const [microsoft365Form, setMicrosoft365Form] = useState<Microsoft365Config>({
-    clientId: '',
-    clientSecret: '',
-    tenantId: '',
+    clientId: 'ms-client-12345',
+    clientSecret: 'ms-secret-67890',
+    tenantId: 'tenant-abcde',
     redirectUri: typeof window !== 'undefined' ? window.location.origin + '/auth/microsoft/callback' : '',
   });
 
   const [googleWorkspaceForm, setGoogleWorkspaceForm] = useState<GoogleWorkspaceConfig>({
-    clientId: '',
-    clientSecret: '',
+    clientId: 'google-client-12345',
+    clientSecret: 'google-secret-67890',
     redirectUri: typeof window !== 'undefined' ? window.location.origin + '/auth/google/callback' : '',
     scope: 'https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/drive.readonly',
+    accountId: 'example.com',
   });
 
   const [dropboxForm, setDropboxForm] = useState<DropboxConfig>({
-    appKey: '',
-    appSecret: '',
+    appKey: 'dropbox-app-12345',
+    appSecret: 'dropbox-secret-67890',
     redirectUri: typeof window !== 'undefined' ? window.location.origin + '/auth/dropbox/callback' : '',
   });
 
   const [slackForm, setSlackForm] = useState<SlackConfig>({
-    clientId: '',
-    clientSecret: '',
+    clientId: 'slack-client-12345',
+    clientSecret: 'slack-secret-67890',
     redirectUri: typeof window !== 'undefined' ? window.location.origin + '/auth/slack/callback' : '',
     scopes: 'channels:read channels:history users:read',
+    workspaceId: 'T01ABC123DE',
   });
 
   const [zoomForm, setZoomForm] = useState<ZoomConfig>({
-    clientId: '',
-    clientSecret: '',
+    clientId: 'zoom-client-12345',
+    clientSecret: 'zoom-secret-67890',
     redirectUri: typeof window !== 'undefined' ? window.location.origin + '/auth/zoom/callback' : '',
+    accountId: 'zoom-account-12345',
+  });
+
+  const [jiraForm, setJiraForm] = useState<JiraConfig>({
+    clientId: 'jira-client-12345',
+    clientSecret: 'jira-secret-67890',
+    redirectUri: typeof window !== 'undefined' ? window.location.origin + '/auth/jira/callback' : '',
+    instanceUrl: 'https://example.atlassian.net',
   });
 
   const [customAPIForm, setCustomAPIForm] = useState<Omit<CustomAPI, 'id' | 'name' | 'isConnected'>>({
@@ -334,7 +651,6 @@ const ConnectionPage: React.FC = () => {
     authType: 'Bearer',
   });
 
-  // Initialize window location for redirect URIs
   useEffect(() => {
     if (typeof window !== 'undefined') {
       setMicrosoft365Form(prev => ({
@@ -357,28 +673,36 @@ const ConnectionPage: React.FC = () => {
         ...prev,
         redirectUri: window.location.origin + '/auth/zoom/callback'
       }));
+      setJiraForm(prev => ({
+        ...prev,
+        redirectUri: window.location.origin + '/auth/jira/callback'
+      }));
     }
   }, []);
 
   const router = useRouter();
   const { setCurrentStep } = useStep();
 
-  // Show modal for service configuration
   const showConfigModal = (service: string) => {
     setActiveModal(service);
   };
 
-  // Show settings modal for a service
   const showSettingsModal = (service: string) => {
     setActiveModal(`${service}_settings`);
   };
 
-  // Show settings modal for a custom API
+  const showStatsModal = async (service: string) => {
+    setIsLoadingStats(true);
+    setActiveModal(`${service}_stats`);
+    setTimeout(() => {
+      setActiveStats(MOCK_STATS[service]);
+      setIsLoadingStats(false);
+    }, 500);
+  };
+
   const showCustomAPISettingsModal = (apiId: string) => {
     setEditingApiId(apiId);
     setActiveModal('customAPI_settings');
-    
-    // Find the API being edited and populate the form
     const api = customAPIs.find(api => api.id === apiId);
     if (api) {
       setCustomAPIForm({
@@ -390,50 +714,157 @@ const ConnectionPage: React.FC = () => {
     }
   };
 
-  // Helper function for form submission
-  const handleFormSubmit = (service: keyof ConnectionStatus) => {
-    // Here you would typically make API calls to authenticate with the service
-    setConnections(prev => ({
-      ...prev,
-      [service]: true
-    }));
-    setActiveModal(null); // Close the modal after submission
+  const showCustomAPIStatsModal = async (apiId: string) => {
+    setIsLoadingStats(true);
+    setActiveModal('customAPI_stats');
+    const api = customAPIs.find(api => api.id === apiId);
+    if (api) {
+      const mockKey = `customAPI${apiId.replace('api', '')}`;
+      setTimeout(() => {
+        setActiveStats(MOCK_STATS[mockKey] || {
+          connection_id: api.connectionId || `custom-${apiId}-${Date.now()}`,
+          status: "connected",
+          last_connected_at: new Date().toISOString(),
+          created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+        });
+        setIsLoadingStats(false);
+      }, 500);
+    }
   };
 
-  // Function to connect a service without configuration
+  const handleFormSubmit = async (service: keyof ConnectionStatus) => {
+    try {
+      let config;
+      switch (service) {
+        case 'microsoft365':
+          config = {
+            tenant_id: microsoft365Form.tenantId,
+            client_id: microsoft365Form.clientId,
+            client_secret: microsoft365Form.clientSecret,
+            redirect_uri: microsoft365Form.redirectUri,
+          };
+          break;
+        case 'googleWorkspace':
+          config = {
+            account_id: googleWorkspaceForm.accountId,
+            client_id: googleWorkspaceForm.clientId,
+            client_secret: googleWorkspaceForm.clientSecret,
+            redirect_uri: googleWorkspaceForm.redirectUri,
+          };
+          break;
+        case 'dropbox':
+          config = {
+            app_key: dropboxForm.appKey,
+            client_id: dropboxForm.appKey, 
+            client_secret: dropboxForm.appSecret,
+            redirect_uri: dropboxForm.redirectUri,
+          };
+          break;
+        case 'slack':
+          config = {
+            workspace_id: slackForm.workspaceId,
+            client_id: slackForm.clientId,
+            client_secret: slackForm.clientSecret,
+            redirect_uri: slackForm.redirectUri,
+          };
+          break;
+        case 'zoom':
+          config = {
+            account_id: zoomForm.accountId,
+            client_id: zoomForm.clientId,
+            client_secret: zoomForm.clientSecret,
+            redirect_uri: zoomForm.redirectUri,
+          };
+          break;
+        case 'jira':
+          config = {
+            instance_url: jiraForm.instanceUrl,
+            client_id: jiraForm.clientId,
+            client_secret: jiraForm.clientSecret,
+            redirect_uri: jiraForm.redirectUri,
+          };
+          break;
+        default:
+          throw new Error('Unknown service');
+      }
+
+      const result = await ConnectionAPI.createConnection(service, config);
+      setConnectionIds(prev => ({
+        ...prev,
+        [service]: result.connection_id
+      }));
+      const connectResult = await ConnectionAPI.connect(result.connection_id);
+      
+      if (connectResult.status === 'connected') {
+        setConnections(prev => ({
+          ...prev,
+          [service]: true
+        }));
+        toast({
+          title: "Connection Successful",
+          description: `Successfully connected to ${service}.`,
+        });
+      } else {
+        toast({
+          title: "Connection Failed",
+          description: connectResult.error || `Failed to connect to ${service}.`,
+          variant: "destructive",
+        });
+      }
+      setActiveModal(null);
+    } catch (error) {
+      console.error(`Error setting up ${service}:`, error);
+      toast({
+        title: "Error",
+        description: `Failed to set up ${service}. Please check your credentials.`,
+        variant: "destructive",
+      });
+    }
+  };
+
   const connectService = (service: keyof ConnectionStatus) => {
-    // For a real implementation, this would show the auth flow first
-    // For demo purposes, we'll just open the config modal
     showConfigModal(service);
   };
 
-  // Function to disconnect a service
-  const disconnectService = (service: keyof ConnectionStatus) => {
-    // Here you would typically make API calls to revoke access
-    setConnections(prev => ({
-      ...prev,
-      [service]: false
-    }));
+  const disconnectService = async (service: keyof ConnectionStatus) => {
+    try {
+      setConnections(prev => ({
+        ...prev,
+        [service]: false
+      }));
+      toast({
+        title: "Disconnected",
+        description: `Successfully disconnected from ${service}.`,
+      });
+    } catch (error) {
+      console.error(`Error disconnecting ${service}:`, error);
+      toast({
+        title: "Error",
+        description: `Failed to disconnect from ${service}.`,
+        variant: "destructive",
+      });
+    }
   };
 
-  // Function to handle custom API connection
-  const connectCustomAPI = (apiId: string) => {
+  const connectCustomAPI = async (apiId: string) => {
     setEditingApiId(apiId);
     showConfigModal('customAPI');
   };
 
-  // Function to handle custom API disconnection
   const disconnectCustomAPI = (apiId: string) => {
     setCustomAPIs(prevAPIs => 
       prevAPIs.map(api => 
         api.id === apiId 
-          ? { ...api, isConnected: false } 
+          ? { ...api, isConnected: false, connectionId: undefined, stats: undefined } 
           : api
       )
     );
+    toast({
+      title: "Disconnected",
+      description: "Successfully disconnected the custom API.",
+    });
   };
 
-  // Function to add a new custom API
   const addCustomAPI = () => {
     const newId = `api${customAPIs.length + 1}`;
     setCustomAPIs(prevAPIs => [
@@ -450,12 +881,10 @@ const ConnectionPage: React.FC = () => {
     ]);
   };
   
-  // Function to delete a custom API
   const deleteCustomAPI = (apiId: string) => {
     setCustomAPIs(prevAPIs => prevAPIs.filter(api => api.id !== apiId));
   };
 
-  // Function to rename a custom API
   const renameCustomAPI = (apiId: string, newName: string) => {
     setCustomAPIs(prevAPIs => 
       prevAPIs.map(api => 
@@ -466,29 +895,62 @@ const ConnectionPage: React.FC = () => {
     );
   };
 
-  // Function to handle custom API form submission
-  const handleCustomAPIFormSubmit = () => {
+  const handleCustomAPIFormSubmit = async () => {
     if (!editingApiId) return;
 
-    setCustomAPIs(prevAPIs => 
-      prevAPIs.map(api => 
-        api.id === editingApiId 
-          ? { 
-              ...api, 
-              isConnected: true,
-              apiUrl: customAPIForm.apiUrl,
-              apiKey: customAPIForm.apiKey,
-              headers: customAPIForm.headers,
-              authType: customAPIForm.authType,
-            } 
-          : api
-      )
-    );
-    setActiveModal(null);
-    setEditingApiId(null);
+    try {
+      const api = customAPIs.find(api => api.id === editingApiId);
+      if (!api) return;
+      
+      const config = {
+        api_url: customAPIForm.apiUrl,
+        api_key: customAPIForm.apiKey,
+        auth_type: customAPIForm.authType,
+        headers: customAPIForm.headers,
+      };
+      
+      const result = await ConnectionAPI.createConnection('customapi', config);
+      const connectResult = await ConnectionAPI.connect(result.connection_id);
+      
+      if (connectResult.status === 'connected') {
+        setCustomAPIs(prevAPIs => 
+          prevAPIs.map(api => 
+            api.id === editingApiId 
+              ? { 
+                  ...api, 
+                  isConnected: true,
+                  apiUrl: customAPIForm.apiUrl,
+                  apiKey: customAPIForm.apiKey,
+                  headers: customAPIForm.headers,
+                  authType: customAPIForm.authType,
+                  connectionId: result.connection_id,
+                } 
+              : api
+          )
+        );
+        toast({
+          title: "Connection Successful",
+          description: `Successfully connected to custom API.`,
+        });
+      } else {
+        toast({
+          title: "Connection Failed",
+          description: connectResult.error || `Failed to connect to custom API.`,
+          variant: "destructive",
+        });
+      }
+      setActiveModal(null);
+      setEditingApiId(null);
+    } catch (error) {
+      console.error("Error setting up custom API:", error);
+      toast({
+        title: "Error",
+        description: "Failed to set up custom API. Please check your configuration.",
+        variant: "destructive",
+      });
+    }
   };
 
-  // Function to update custom API settings
   const updateCustomAPISettings = () => {
     if (!editingApiId) return;
 
@@ -507,22 +969,60 @@ const ConnectionPage: React.FC = () => {
     );
     setActiveModal(null);
     setEditingApiId(null);
+    toast({
+      title: "Settings Updated",
+      description: "Successfully updated custom API settings.",
+    });
+  };
+
+  const testConnection = async (service: string, config: any) => {
+    try {
+      setIsTestingConnection(true);
+      const result = await ConnectionAPI.testConnection(service, config);
+      if (result.success) {
+        toast({
+          title: "Test Successful",
+          description: result.message,
+        });
+      } else {
+        toast({
+          title: "Test Failed",
+          description: result.message,
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An error occurred while testing the connection.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsTestingConnection(false);
+    }
   };
 
   const isAnyConnected = Object.values(connections).some(Boolean) || 
-                         customAPIs.some(api => api.isConnected); // Check if any service is connected
+                         customAPIs.some(api => api.isConnected);
 
   const handleBack = () => {
-    setCurrentStep(0); // Move back to Organization step
+    setCurrentStep(0);
     router.push('/components/FirstTimeSetUp/OrganizationSetup');
   };
 
   const handleNext = () => {
-    setCurrentStep(2); // Move to Employees step
+    setCurrentStep(2);
     router.push('/components/FirstTimeSetUp/employees');
   };
 
-  // Render a platform card
+  const formatDate = (dateString: string) => {
+    try {
+      return new Date(dateString).toLocaleString();
+    } catch (e) {
+      return dateString;
+    }
+  };
+  
   const renderPlatformCard = (
     name: string, 
     icon: React.ReactNode, 
@@ -531,6 +1031,7 @@ const ConnectionPage: React.FC = () => {
     serviceName: string
   ) => {
     const isConnected = connections[connectionKey];
+    const connectionId = connectionIds[connectionKey];
     
     return (
       <Card className="bg-white border border-gray-200 shadow-md hover:shadow-xl rounded-lg transition-all duration-300">
@@ -551,6 +1052,9 @@ const ConnectionPage: React.FC = () => {
         <CardContent>
           <div className="text-sm text-muted-foreground">
             <p>{description}</p>
+            {connectionId && (
+              <p className="mt-1 text-xs">Connection ID: {connectionId}</p>
+            )}
           </div>
         </CardContent>
         <CardFooter className="flex justify-between">
@@ -572,6 +1076,14 @@ const ConnectionPage: React.FC = () => {
               >
                 <Settings className="h-4 w-4" />
               </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="ml-2 cursor-pointer"
+                onClick={() => showStatsModal(serviceName)}
+              >
+                <Info className="h-4 w-4" />
+              </Button>
             </>
           ) : (
             <Button 
@@ -590,10 +1102,8 @@ const ConnectionPage: React.FC = () => {
 
   return (
     <main className="min-h-screen bg-background">
-      {/* Main Content */}
       <div className="container px-4 py-6 md:px-6 md:py-12 lg:py-16">
         <div className="flex flex-col gap-8">
-          {/* Page Title */}
           <div>
             <h2 className="text-3xl font-bold tracking-tight">Data Source Connection</h2>
             <p className="text-muted-foreground mt-2">
@@ -601,9 +1111,7 @@ const ConnectionPage: React.FC = () => {
             </p>
           </div>
 
-          {/* Integration Cards */}
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {/* Microsoft 365 */}
             {renderPlatformCard(
               "Microsoft 365",
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 23 23" className="bg-[#f3f2f1]">
@@ -617,7 +1125,6 @@ const ConnectionPage: React.FC = () => {
               "microsoft365"
             )}
 
-            {/* Google Workspace */}
             {renderPlatformCard(
               "Google Workspace",
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" className="bg-white">
@@ -643,7 +1150,6 @@ const ConnectionPage: React.FC = () => {
               "googleWorkspace"
             )}
 
-            {/* Dropbox */}
             {renderPlatformCard(
               "Dropbox",
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white" className="bg-[#0061ff]">
@@ -654,7 +1160,6 @@ const ConnectionPage: React.FC = () => {
               "dropbox"
             )}
 
-            {/* Slack */}
             {renderPlatformCard(
               "Slack",
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white" className="bg-[#4A154B]">
@@ -665,7 +1170,6 @@ const ConnectionPage: React.FC = () => {
               "slack"
             )}
 
-            {/* Zoom */}
             {renderPlatformCard(
               "Zoom",
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white" className="bg-[#2D8CFF]">
@@ -675,8 +1179,17 @@ const ConnectionPage: React.FC = () => {
               "zoom",
               "zoom"
             )}
+            
+            {renderPlatformCard(
+              "Jira",
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white" className="bg-[#0052CC]">
+                <path d="M11.53 2l-4.78 4.78 4.78 4.78 4.78-4.78L11.53 2zm-4.78 4.78L2 11.53l4.78 4.78 4.78-4.78-4.78-4.78zm9.56 0l-4.78 4.78 4.78 4.78L21.06 11.53l-4.78-4.78zm-4.78 4.78L6.74 16.31l4.78 4.78 4.78-4.78-4.78-4.78z" />
+              </svg>,
+              "Connect to access Jira issues, projects, and workflow data.",
+              "jira",
+              "jira"
+            )}
 
-            {/* Custom API Cards */}
             {customAPIs.map(api => (
               <CustomAPICard
                 key={api.id}
@@ -684,12 +1197,12 @@ const ConnectionPage: React.FC = () => {
                 onConnect={() => connectCustomAPI(api.id)}
                 onDisconnect={() => disconnectCustomAPI(api.id)}
                 onSettings={() => showCustomAPISettingsModal(api.id)}
+                onStats={() => showCustomAPIStatsModal(api.id)}
                 onRename={(newName) => renameCustomAPI(api.id, newName)}
                 onDelete={() => deleteCustomAPI(api.id)}
               />
             ))}
 
-            {/* Add New API Card */}
             <Card 
               className="bg-white border border-dashed border-gray-300 shadow-sm hover:shadow-md rounded-lg transition-all duration-300 cursor-pointer"
               onClick={addCustomAPI}
@@ -703,7 +1216,6 @@ const ConnectionPage: React.FC = () => {
             </Card>
           </div>
 
-          {/* Navigation Buttons */}
           <div className="flex justify-between mt-4">
             <Button 
               onClick={handleBack}
@@ -711,13 +1223,26 @@ const ConnectionPage: React.FC = () => {
             >
               Back
             </Button>
-            <Button 
-              onClick={handleNext}
-              className={`bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg ${isAnyConnected ? '' : 'opacity-50 cursor-not-allowed'}`}
-              disabled={!isAnyConnected}
-            >
-              Next
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div>
+                    <Button 
+                      onClick={handleNext}
+                      className={`bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg ${isAnyConnected ? '' : 'opacity-50 cursor-not-allowed'}`}
+                      disabled={!isAnyConnected}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </TooltipTrigger>
+                {!isAnyConnected && (
+                  <TooltipContent>
+                    <p>Connect at least one service to continue</p>
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            </TooltipProvider>
           </div>
         </div>
       </div>
@@ -774,6 +1299,30 @@ const ConnectionPage: React.FC = () => {
             </div>
             <div className="flex justify-end space-x-2 pt-4">
               <Button type="button" variant="outline" onClick={() => setActiveModal(null)}>Cancel</Button>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => {
+                  const config = {
+                    tenant_id: microsoft365Form.tenantId,
+                    client_id: microsoft365Form.clientId,
+                    client_secret: microsoft365Form.clientSecret,
+                    redirect_uri: microsoft365Form.redirectUri,
+                  };
+                  testConnection('microsoft365', config);
+                }}
+                disabled={isTestingConnection}
+                className="w-32"
+              >
+                {isTestingConnection ? (
+                  <div className="flex items-center">
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Testing...
+                  </div>
+                ) : (
+                  "Test Connection"
+                )}
+              </Button>
               <Button type="submit">Connect</Button>
             </div>
           </div>
@@ -829,6 +1378,30 @@ const ConnectionPage: React.FC = () => {
             </div>
             <div className="flex justify-end space-x-2 pt-4">
               <Button type="button" variant="outline" onClick={() => setActiveModal(null)}>Cancel</Button>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => {
+                  const config = {
+                    tenant_id: microsoft365Form.tenantId,
+                    client_id: microsoft365Form.clientId,
+                    client_secret: microsoft365Form.clientSecret,
+                    redirect_uri: microsoft365Form.redirectUri,
+                  };
+                  testConnection('microsoft365', config);
+                }}
+                disabled={isTestingConnection}
+                className="w-32"
+              >
+                {isTestingConnection ? (
+                  <div className="flex items-center">
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Testing...
+                  </div>
+                ) : (
+                  "Test Connection"
+                )}
+              </Button>
               <Button type="submit">Save Changes</Button>
             </div>
           </div>
@@ -846,6 +1419,17 @@ const ConnectionPage: React.FC = () => {
           handleFormSubmit('googleWorkspace');
         }}>
           <div className="space-y-4">
+            <div>
+              <Label htmlFor="google-account-id">Account ID</Label>
+              <Input 
+                id="google-account-id" 
+                value={googleWorkspaceForm.accountId}
+                onChange={(e) => setGoogleWorkspaceForm({...googleWorkspaceForm, accountId: e.target.value})}
+                required
+                placeholder="example.com"
+              />
+              <p className="text-xs text-gray-500 mt-1">Your Google Workspace domain (e.g., example.com)</p>
+            </div>
             <div>
               <Label htmlFor="google-client-id">Client ID</Label>
               <Input 
@@ -886,6 +1470,30 @@ const ConnectionPage: React.FC = () => {
             </div>
             <div className="flex justify-end space-x-2 pt-4">
               <Button type="button" variant="outline" onClick={() => setActiveModal(null)}>Cancel</Button>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => {
+                  const config = {
+                    account_id: googleWorkspaceForm.accountId,
+                    client_id: googleWorkspaceForm.clientId,
+                    client_secret: googleWorkspaceForm.clientSecret,
+                    redirect_uri: googleWorkspaceForm.redirectUri,
+                  };
+                  testConnection('googleWorkspace', config);
+                }}
+                disabled={isTestingConnection}
+                className="w-32"
+              >
+                {isTestingConnection ? (
+                  <div className="flex items-center">
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Testing...
+                  </div>
+                ) : (
+                  "Test Connection"
+                )}
+              </Button>
               <Button type="submit">Connect</Button>
             </div>
           </div>
@@ -903,7 +1511,15 @@ const ConnectionPage: React.FC = () => {
           setActiveModal(null);
         }}>
           <div className="space-y-4">
-            {/* Same fields as configuration but for settings */}
+            <div>
+              <Label htmlFor="google-account-id-settings">Account ID</Label>
+              <Input 
+                id="google-account-id-settings" 
+                value={googleWorkspaceForm.accountId}
+                onChange={(e) => setGoogleWorkspaceForm({...googleWorkspaceForm, accountId: e.target.value})}
+                required
+              />
+            </div>
             <div>
               <Label htmlFor="google-client-id-settings">Client ID</Label>
               <Input 
@@ -943,6 +1559,30 @@ const ConnectionPage: React.FC = () => {
             </div>
             <div className="flex justify-end space-x-2 pt-4">
               <Button type="button" variant="outline" onClick={() => setActiveModal(null)}>Cancel</Button>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => {
+                  const config = {
+                    account_id: googleWorkspaceForm.accountId,
+                    client_id: googleWorkspaceForm.clientId,
+                    client_secret: googleWorkspaceForm.clientSecret,
+                    redirect_uri: googleWorkspaceForm.redirectUri,
+                  };
+                  testConnection('googleWorkspace', config);
+                }}
+                disabled={isTestingConnection}
+                className="w-32"
+              >
+                {isTestingConnection ? (
+                  <div className="flex items-center">
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Testing...
+                  </div>
+                ) : (
+                  "Test Connection"
+                )}
+              </Button>
               <Button type="submit">Save Changes</Button>
             </div>
           </div>
@@ -989,13 +1629,36 @@ const ConnectionPage: React.FC = () => {
             </div>
             <div className="flex justify-end space-x-2 pt-4">
               <Button type="button" variant="outline" onClick={() => setActiveModal(null)}>Cancel</Button>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => {
+                  const config = {
+                    app_key: dropboxForm.appKey,
+                    client_secret: dropboxForm.appSecret,
+                    redirect_uri: dropboxForm.redirectUri,
+                  };
+                  testConnection('dropbox', config);
+                }}
+                disabled={isTestingConnection}
+                className="w-32"
+              >
+                {isTestingConnection ? (
+                  <div className="flex items-center">
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Testing...
+                  </div>
+                ) : (
+                  "Test Connection"
+                )}
+              </Button>
               <Button type="submit">Connect</Button>
             </div>
           </div>
         </form>
       </ConfigModal>
 
-      {/* Dropbox Settings Modal */}
+     {/* Dropbox Settings Modal */}
       <ConfigModal
         isOpen={activeModal === 'dropbox_settings'}
         onClose={() => setActiveModal(null)}
@@ -1035,6 +1698,40 @@ const ConnectionPage: React.FC = () => {
             </div>
             <div className="flex justify-end space-x-2 pt-4">
               <Button type="button" variant="outline" onClick={() => setActiveModal(null)}>Cancel</Button>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={async () => {
+                  const config = {
+                    app_key: dropboxForm.appKey,
+                    client_secret: dropboxForm.appSecret,
+                    redirect_uri: dropboxForm.redirectUri,
+                  };
+                  try {
+                    const result = await ConnectionAPI.testConnection('dropbox', config);
+                    if (result.success) {
+                      toast({
+                        title: "Test Successful",
+                        description: result.message,
+                      });
+                    } else {
+                      toast({
+                        title: "Test Failed",
+                        description: result.message,
+                        variant: "destructive",
+                      });
+                    }
+                  } catch (error) {
+                    toast({
+                      title: "Error",
+                      description: "An error occurred while testing the connection.",
+                      variant: "destructive",
+                    });
+                  }
+                }}
+              >
+                Test Connection
+              </Button>
               <Button type="submit">Save Changes</Button>
             </div>
           </div>
@@ -1052,6 +1749,17 @@ const ConnectionPage: React.FC = () => {
           handleFormSubmit('slack');
         }}>
           <div className="space-y-4">
+            <div>
+              <Label htmlFor="slack-workspace-id">Workspace ID</Label>
+              <Input 
+                id="slack-workspace-id" 
+                value={slackForm.workspaceId}
+                onChange={(e) => setSlackForm({...slackForm, workspaceId: e.target.value})}
+                placeholder="T01ABC123DE"
+                required
+              />
+              <p className="text-xs text-gray-500 mt-1">Your Slack workspace identifier (e.g., T01ABC123DE)</p>
+            </div>
             <div>
               <Label htmlFor="slack-client-id">Client ID</Label>
               <Input 
@@ -1091,6 +1799,41 @@ const ConnectionPage: React.FC = () => {
             </div>
             <div className="flex justify-end space-x-2 pt-4">
               <Button type="button" variant="outline" onClick={() => setActiveModal(null)}>Cancel</Button>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={async () => {
+                  const config = {
+                    workspace_id: slackForm.workspaceId,
+                    client_id: slackForm.clientId,
+                    client_secret: slackForm.clientSecret,
+                    redirect_uri: slackForm.redirectUri,
+                  };
+                  try {
+                    const result = await ConnectionAPI.testConnection('slack', config);
+                    if (result.success) {
+                      toast({
+                        title: "Test Successful",
+                        description: result.message,
+                      });
+                    } else {
+                      toast({
+                        title: "Test Failed",
+                        description: result.message,
+                        variant: "destructive",
+                      });
+                    }
+                  } catch (error) {
+                    toast({
+                      title: "Error",
+                      description: "An error occurred while testing the connection.",
+                      variant: "destructive",
+                    });
+                  }
+                }}
+              >
+                Test Connection
+              </Button>
               <Button type="submit">Connect</Button>
             </div>
           </div>
@@ -1108,6 +1851,15 @@ const ConnectionPage: React.FC = () => {
           setActiveModal(null);
         }}>
           <div className="space-y-4">
+            <div>
+              <Label htmlFor="slack-workspace-id-settings">Workspace ID</Label>
+              <Input 
+                id="slack-workspace-id-settings" 
+                value={slackForm.workspaceId}
+                onChange={(e) => setSlackForm({...slackForm, workspaceId: e.target.value})}
+                required
+              />
+            </div>
             <div>
               <Label htmlFor="slack-client-id-settings">Client ID</Label>
               <Input 
@@ -1146,6 +1898,41 @@ const ConnectionPage: React.FC = () => {
             </div>
             <div className="flex justify-end space-x-2 pt-4">
               <Button type="button" variant="outline" onClick={() => setActiveModal(null)}>Cancel</Button>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={async () => {
+                  const config = {
+                    workspace_id: slackForm.workspaceId,
+                    client_id: slackForm.clientId,
+                    client_secret: slackForm.clientSecret,
+                    redirect_uri: slackForm.redirectUri,
+                  };
+                  try {
+                    const result = await ConnectionAPI.testConnection('slack', config);
+                    if (result.success) {
+                      toast({
+                        title: "Test Successful",
+                        description: result.message,
+                      });
+                    } else {
+                      toast({
+                        title: "Test Failed",
+                        description: result.message,
+                        variant: "destructive",
+                      });
+                    }
+                  } catch (error) {
+                    toast({
+                      title: "Error",
+                      description: "An error occurred while testing the connection.",
+                      variant: "destructive",
+                    });
+                  }
+                }}
+              >
+                Test Connection
+              </Button>
               <Button type="submit">Save Changes</Button>
             </div>
           </div>
@@ -1163,6 +1950,15 @@ const ConnectionPage: React.FC = () => {
           handleFormSubmit('zoom');
         }}>
           <div className="space-y-4">
+            <div>
+              <Label htmlFor="zoom-account-id">Account ID</Label>
+              <Input 
+                id="zoom-account-id" 
+                value={zoomForm.accountId}
+                onChange={(e) => setZoomForm({...zoomForm, accountId: e.target.value})}
+                required
+              />
+            </div>
             <div>
               <Label htmlFor="zoom-client-id">Client ID</Label>
               <Input 
@@ -1192,6 +1988,41 @@ const ConnectionPage: React.FC = () => {
             </div>
             <div className="flex justify-end space-x-2 pt-4">
               <Button type="button" variant="outline" onClick={() => setActiveModal(null)}>Cancel</Button>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={async () => {
+                  const config = {
+                    account_id: zoomForm.accountId,
+                    client_id: zoomForm.clientId,
+                    client_secret: zoomForm.clientSecret,
+                    redirect_uri: zoomForm.redirectUri,
+                  };
+                  try {
+                    const result = await ConnectionAPI.testConnection('zoom', config);
+                    if (result.success) {
+                      toast({
+                        title: "Test Successful",
+                        description: result.message,
+                      });
+                    } else {
+                      toast({
+                        title: "Test Failed",
+                        description: result.message,
+                        variant: "destructive",
+                      });
+                    }
+                  } catch (error) {
+                    toast({
+                      title: "Error",
+                      description: "An error occurred while testing the connection.",
+                      variant: "destructive",
+                    });
+                  }
+                }}
+              >
+                Test Connection
+              </Button>
               <Button type="submit">Connect</Button>
             </div>
           </div>
@@ -1209,6 +2040,15 @@ const ConnectionPage: React.FC = () => {
           setActiveModal(null);
         }}>
           <div className="space-y-4">
+            <div>
+              <Label htmlFor="zoom-account-id-settings">Account ID</Label>
+              <Input 
+                id="zoom-account-id-settings" 
+                value={zoomForm.accountId}
+                onChange={(e) => setZoomForm({...zoomForm, accountId: e.target.value})}
+                required
+              />
+            </div>
             <div>
               <Label htmlFor="zoom-client-id-settings">Client ID</Label>
               <Input 
@@ -1238,6 +2078,223 @@ const ConnectionPage: React.FC = () => {
             </div>
             <div className="flex justify-end space-x-2 pt-4">
               <Button type="button" variant="outline" onClick={() => setActiveModal(null)}>Cancel</Button>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={async () => {
+                  const config = {
+                    account_id: zoomForm.accountId,
+                    client_id: zoomForm.clientId,
+                    client_secret: zoomForm.clientSecret,
+                    redirect_uri: zoomForm.redirectUri,
+                  };
+                  try {
+                    const result = await ConnectionAPI.testConnection('zoom', config);
+                    if (result.success) {
+                      toast({
+                        title: "Test Successful",
+                        description: result.message,
+                      });
+                    } else {
+                      toast({
+                        title: "Test Failed",
+                        description: result.message,
+                        variant: "destructive",
+                      });
+                    }
+                  } catch (error) {
+                    toast({
+                      title: "Error",
+                      description: "An error occurred while testing the connection.",
+                      variant: "destructive",
+                    });
+                  }
+                }}
+              >
+                Test Connection
+              </Button>
+              <Button type="submit">Save Changes</Button>
+            </div>
+          </div>
+        </form>
+      </ConfigModal>
+
+      {/* Jira Config Modal */}
+      <ConfigModal
+        isOpen={activeModal === 'jira'}
+        onClose={() => setActiveModal(null)}
+        title="Jira Configuration"
+      >
+        <form onSubmit={(e) => {
+          e.preventDefault();
+          handleFormSubmit('jira');
+        }}>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="jira-instance-url">Instance URL</Label>
+              <Input 
+                id="jira-instance-url" 
+                value={jiraForm.instanceUrl}
+                onChange={(e) => setJiraForm({...jiraForm, instanceUrl: e.target.value})}
+                required
+                placeholder="https://your-domain.atlassian.net"
+              />
+            </div>
+            <div>
+              <Label htmlFor="jira-client-id">Client ID</Label>
+              <Input 
+                id="jira-client-id" 
+                value={jiraForm.clientId}
+                onChange={(e) => setJiraForm({...jiraForm, clientId: e.target.value})}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="jira-client-secret">Client Secret</Label>
+              <PasswordInput
+                id="jira-client-secret" 
+                value={jiraForm.clientSecret}
+                onChange={(e) => setJiraForm({...jiraForm, clientSecret: e.target.value})}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="jira-redirect-uri">Redirect URI</Label>
+              <Input 
+                id="jira-redirect-uri" 
+                value={jiraForm.redirectUri}
+                onChange={(e) => setJiraForm({...jiraForm, redirectUri: e.target.value})}
+                required
+              />
+              <p className="text-xs text-gray-500 mt-1">This URI needs to be registered in your Atlassian app.</p>
+            </div>
+            <div className="flex justify-end space-x-2 pt-4">
+              <Button type="button" variant="outline" onClick={() => setActiveModal(null)}>Cancel</Button>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={async () => {
+                  const config = {
+                    instance_url: jiraForm.instanceUrl,
+                    client_id: jiraForm.clientId,
+                    client_secret: jiraForm.clientSecret,
+                    redirect_uri: jiraForm.redirectUri,
+                  };
+                  try {
+                    const result = await ConnectionAPI.testConnection('jira', config);
+                    if (result.success) {
+                      toast({
+                        title: "Test Successful",
+                        description: result.message,
+                      });
+                    } else {
+                      toast({
+                        title: "Test Failed",
+                        description: result.message,
+                        variant: "destructive",
+                      });
+                    }
+                  } catch (error) {
+                    toast({
+                      title: "Error",
+                      description: "An error occurred while testing the connection.",
+                      variant: "destructive",
+                    });
+                  }
+                }}
+              >
+                Test Connection
+              </Button>
+              <Button type="submit">Connect</Button>
+            </div>
+          </div>
+        </form>
+      </ConfigModal>
+
+      {/* Jira Settings Modal */}
+      <ConfigModal
+        isOpen={activeModal === 'jira_settings'}
+        onClose={() => setActiveModal(null)}
+        title="Jira Settings"
+      >
+        <form onSubmit={(e) => {
+          e.preventDefault();
+          setActiveModal(null);
+        }}>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="jira-instance-url-settings">Instance URL</Label>
+              <Input 
+                id="jira-instance-url-settings" 
+                value={jiraForm.instanceUrl}
+                onChange={(e) => setJiraForm({...jiraForm, instanceUrl: e.target.value})}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="jira-client-id-settings">Client ID</Label>
+              <Input 
+                id="jira-client-id-settings" 
+                value={jiraForm.clientId}
+                onChange={(e) => setJiraForm({...jiraForm, clientId: e.target.value})}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="jira-client-secret-settings">Client Secret</Label>
+              <PasswordInput
+                id="jira-client-secret-settings" 
+                value={jiraForm.clientSecret}
+                onChange={(e) => setJiraForm({...jiraForm, clientSecret: e.target.value})}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="jira-redirect-uri-settings">Redirect URI</Label>
+              <Input 
+                id="jira-redirect-uri-settings" 
+                value={jiraForm.redirectUri}
+                onChange={(e) => setJiraForm({...jiraForm, redirectUri: e.target.value})}
+                required
+              />
+            </div>
+            <div className="flex justify-end space-x-2 pt-4">
+              <Button type="button" variant="outline" onClick={() => setActiveModal(null)}>Cancel</Button>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={async () => {
+                  const config = {
+                    instance_url: jiraForm.instanceUrl,
+                    client_id: jiraForm.clientId,
+                    client_secret: jiraForm.clientSecret,
+                    redirect_uri: jiraForm.redirectUri,
+                  };
+                  try {
+                    const result = await ConnectionAPI.testConnection('jira', config);
+                    if (result.success) {
+                      toast({
+                        title: "Test Successful",
+                        description: result.message,
+                      });
+                    } else {
+                      toast({
+                        title: "Test Failed",
+                        description: result.message,
+                        variant: "destructive",
+                      });
+                    }
+                  } catch (error) {
+                    toast({
+                      title: "Error",
+                      description: "An error occurred while testing the connection.",
+                      variant: "destructive",
+                    });
+                  }
+                }}
+              >
+                Test Connection
+              </Button>
               <Button type="submit">Save Changes</Button>
             </div>
           </div>
@@ -1302,6 +2359,41 @@ const ConnectionPage: React.FC = () => {
             </div>
             <div className="flex justify-end space-x-2 pt-4">
               <Button type="button" variant="outline" onClick={() => setActiveModal(null)}>Cancel</Button>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={async () => {
+                  const config = {
+                    api_url: customAPIForm.apiUrl,
+                    api_key: customAPIForm.apiKey,
+                    auth_type: customAPIForm.authType,
+                    headers: customAPIForm.headers,
+                  };
+                  try {
+                    const result = await ConnectionAPI.testConnection('customapi', config);
+                    if (result.success) {
+                      toast({
+                        title: "Test Successful",
+                        description: result.message,
+                      });
+                    } else {
+                      toast({
+                        title: "Test Failed",
+                        description: result.message,
+                        variant: "destructive",
+                      });
+                    }
+                  } catch (error) {
+                    toast({
+                      title: "Error",
+                      description: "An error occurred while testing the connection.",
+                      variant: "destructive",
+                    });
+                  }
+                }}
+              >
+                Test Connection
+              </Button>
               <Button type="submit">Connect</Button>
             </div>
           </div>
@@ -1364,11 +2456,66 @@ const ConnectionPage: React.FC = () => {
             </div>
             <div className="flex justify-end space-x-2 pt-4">
               <Button type="button" variant="outline" onClick={() => setActiveModal(null)}>Cancel</Button>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={async () => {
+                  const config = {
+                    api_url: customAPIForm.apiUrl,
+                    api_key: customAPIForm.apiKey,
+                    auth_type: customAPIForm.authType,
+                    headers: customAPIForm.headers,
+                  };
+                  try {
+                    const result = await ConnectionAPI.testConnection('customapi', config);
+                    if (result.success) {
+                      toast({
+                        title: "Test Successful",
+                        description: result.message,
+                      });
+                    } else {
+                      toast({
+                        title: "Test Failed",
+                        description: result.message,
+                        variant: "destructive",
+                      });
+                    }
+                  } catch (error) {
+                    toast({
+                      title: "Error",
+                      description: "An error occurred while testing the connection.",
+                      variant: "destructive",
+                    });
+                  }
+                }}
+              >
+                Test Connection
+              </Button>
               <Button type="submit">Save Changes</Button>
             </div>
           </div>
         </form>
       </ConfigModal>
+
+      {/* Stats Modals */}
+      {(activeModal === 'microsoft365_stats' ||
+        activeModal === 'googleWorkspace_stats' ||
+        activeModal === 'dropbox_stats' ||
+        activeModal === 'slack_stats' ||
+        activeModal === 'zoom_stats' ||
+        activeModal === 'jira_stats' ||
+        activeModal === 'customAPI_stats') && (
+        <StatsModal
+          isOpen={true}
+          onClose={() => {
+            setActiveModal(null);
+            setActiveStats(null);
+          }}
+          title={activeModal.split('_')[0]}
+          stats={activeStats}
+          isLoading={isLoadingStats}
+        />
+      )}
     </main>
   )
 }
