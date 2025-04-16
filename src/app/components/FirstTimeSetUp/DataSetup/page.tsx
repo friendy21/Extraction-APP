@@ -43,10 +43,10 @@ const DataOverviewPage = () => {
   const [activeTab, setActiveTab] = useState("aliases");
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
-  const [employeesData, setEmployeesData] = useState([]);
-  const [employeesWithAliases, setEmployeesWithAliases] = useState([]);
-  const [employeesWithConflicts, setEmployeesWithConflicts] = useState([]);
-  const [employeesWithMissingData, setEmployeesWithMissingData] = useState([]);
+  const [employeesData, setEmployeesData] = useState<Employee[]>([]);
+  const [employeesWithAliases, setEmployeesWithAliases] = useState<Employee[]>([]);
+  const [employeesWithConflicts, setEmployeesWithConflicts] = useState<Employee[]>([]);
+  const [employeesWithMissingData, setEmployeesWithMissingData] = useState<Employee[]>([]);
   const [isApplyingChanges, setIsApplyingChanges] = useState(false);
   const [issueStats, setIssueStats] = useState({
     aliasCount: 18,
@@ -63,7 +63,7 @@ const DataOverviewPage = () => {
     const nameIndex = id % 20;
     const departmentIndex = id % 5;
     const hasIssue = id % 6 === 0 || id % 7 === 0 || id % 9 === 0;
-    const issueType = id % 9 === 0 ? 'missing' : (id % 7 === 0 ? 'conflict' : 'alias');
+    const issueType: "alias" | "conflict" | "missing" = id % 9 === 0 ? 'missing' : id % 7 === 0 ? 'conflict' : 'alias';
     const multipleEmails = id % 5 === 0 || id % 7 === 0;
     
     const firstNames = ['John', 'Jane', 'Robert', 'Michael', 'Emily', 'David', 'Sarah', 'Alex', 'Jennifer', 'Jessica', 
@@ -92,19 +92,22 @@ const DataOverviewPage = () => {
       if (id % 2 === 0) {
         emails.push({ 
           address: `${firstName.toLowerCase()[0]}${lastName.toLowerCase()}@company.com`, 
-          source: "Google Workspace" 
+          source: "Google Workspace",
+          isPrimary: false
         });
       } else {
         emails.push({ 
-          address: `${firstName.toLowerCase()}.${lastName.toLowerCase()[0]}@company.com`, 
-          source: "Microsoft 365" 
-        });
+                  address: `${firstName.toLowerCase()}.${lastName.toLowerCase()[0]}@company.com`, 
+                  source: "Microsoft 365",
+                  isPrimary: false
+                });
       }
       
       if (id % 10 === 0) {
         emails.push({ 
           address: `${firstName.toLowerCase()}.${lastName.toLowerCase()}@company.com`.replace('.', '_'), 
-          source: "Slack" 
+          source: "Slack",
+          isPrimary: false
         });
       }
     }
@@ -177,7 +180,8 @@ const DataOverviewPage = () => {
         if (mockEmployee.emails.length === 1) {
           mockEmployee.emails.push({ 
             address: mockEmployee.emails[0].address.replace('.', '_'), 
-            source: "Google Workspace" 
+            source: "Google Workspace",
+            isPrimary: false
           });
         }
       }
@@ -1211,25 +1215,25 @@ const DataOverviewPage = () => {
                 </div>
               </div>
             </div>
-
-            {/* Back and Next Buttons */}
-            <div className="flex justify-between mt-8">
-              <Button 
-                onClick={handleBack} 
-                variant="outline"
-              >
-                <ChevronLeft className="mr-1 h-4 w-4" />
-                Back
-              </Button>
-              <Button 
-                onClick={handleNext}
-              >
-                Next
-                <ChevronRight className="ml-1 h-4 w-4" />
-              </Button>
-            </div>
           </>
         )}
+      </div>
+
+      {/* Back and Next Buttons*/}
+      <div className="flex justify-between mt-6 mb-6">
+        <Button 
+          onClick={handleBack} 
+          variant="outline"
+        >
+          <ChevronLeft className="mr-1 h-4 w-4" />
+          Previous
+        </Button>
+        <Button 
+          onClick={handleNext}
+        >
+          Next
+          <ChevronRight className="ml-1 h-4 w-4" />
+        </Button>
       </div>
 
       {/* Employee Detail Modal */}
