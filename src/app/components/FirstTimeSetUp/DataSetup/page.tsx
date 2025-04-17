@@ -14,56 +14,59 @@ import {
   Eye
 } from "lucide-react";
 
-// Mock Employee Interface
-interface Email {
-  address: string;
-  source?: string;
-  isPrimary?: boolean;
+// Import the new DataQualityIssues component
+import DataQualityIssues, { Email, Employee, IssueStats } from './DataQualityIssues';
+
+interface PaginationControlProps {
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
 }
 
-interface Employee {
-  id: string;
-  name: string;
-  emails: Email[];
-  emailCount: number;
-  chatCount: number;
-  meetingCount: number;
-  fileAccessCount: number;
-  department?: string;
-  position?: string;
-  hasQualityIssues?: boolean;
-  issueType?: 'alias' | 'conflict' | 'missing' | null;
-  isIncluded?: boolean;
+interface BadgeProps {
+  children: React.ReactNode;
+  className?: string;
 }
 
-const DataOverviewPage = () => {
-  const [isCollecting, setIsCollecting] = useState(false);
-  const [dataCollected, setDataCollected] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [activeTab, setActiveTab] = useState("aliases");
-  const [selectedEmployee, setSelectedEmployee] = useState(null);
-  const [showDetailModal, setShowDetailModal] = useState(false);
+interface ButtonProps {
+  onClick?: () => void;
+  disabled?: boolean;
+  className?: string;
+  children: React.ReactNode;
+  variant?: 'outline' | 'ghost' | 'default';
+}
+
+interface EmployeeDetailModalProps {
+  employee: Employee | null;
+}
+
+const DataOverviewPage: React.FC = () => {
+  const [isCollecting, setIsCollecting] = useState<boolean>(false);
+  const [dataCollected, setDataCollected] = useState<boolean>(false);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState<boolean>(false);
   const [employeesData, setEmployeesData] = useState<Employee[]>([]);
   const [employeesWithAliases, setEmployeesWithAliases] = useState<Employee[]>([]);
   const [employeesWithConflicts, setEmployeesWithConflicts] = useState<Employee[]>([]);
   const [employeesWithMissingData, setEmployeesWithMissingData] = useState<Employee[]>([]);
-  const [isApplyingChanges, setIsApplyingChanges] = useState(false);
-  const [issueStats, setIssueStats] = useState({
+  const [isApplyingChanges, setIsApplyingChanges] = useState<boolean>(false);
+  const [issueStats, setIssueStats] = useState<IssueStats>({
     aliasCount: 18,
     conflictCount: 14,
     missingCount: 23
   });
   
-  const itemsPerPage = 10;
-  const totalPages = 25;
-  const totalEmployees = 242;
+  const itemsPerPage: number = 10;
+  const totalPages: number = 25;
+  const totalEmployees: number = 242;
 
   // Function to generate a mock employee
-  const generateMockEmployee = (id) => {
+  const generateMockEmployee = (id: number): Employee => {
     const nameIndex = id % 20;
     const departmentIndex = id % 5;
     const hasIssue = id % 6 === 0 || id % 7 === 0 || id % 9 === 0;
-    const issueType: "alias" | "conflict" | "missing" = id % 9 === 0 ? 'missing' : id % 7 === 0 ? 'conflict' : 'alias';
+    const issueType: "alias" | "conflict" | "missing" | null = id % 9 === 0 ? 'missing' : id % 7 === 0 ? 'conflict' : 'alias';
     const multipleEmails = id % 5 === 0 || id % 7 === 0;
     
     const firstNames = ['John', 'Jane', 'Robert', 'Michael', 'Emily', 'David', 'Sarah', 'Alex', 'Jennifer', 'Jessica', 
@@ -86,7 +89,7 @@ const DataOverviewPage = () => {
     
     // Create email variations
     const mainEmail = `${firstName.toLowerCase()}.${lastName.toLowerCase()}@company.com`;
-    const emails = [{ address: mainEmail, source: "Primary", isPrimary: true }];
+    const emails: Email[] = [{ address: mainEmail, source: "Primary", isPrimary: true }];
     
     if (multipleEmails) {
       if (id % 2 === 0) {
@@ -97,10 +100,10 @@ const DataOverviewPage = () => {
         });
       } else {
         emails.push({ 
-                  address: `${firstName.toLowerCase()}.${lastName.toLowerCase()[0]}@company.com`, 
-                  source: "Microsoft 365",
-                  isPrimary: false
-                });
+          address: `${firstName.toLowerCase()}.${lastName.toLowerCase()[0]}@company.com`, 
+          source: "Microsoft 365",
+          isPrimary: false
+        });
       }
       
       if (id % 10 === 0) {
@@ -139,9 +142,9 @@ const DataOverviewPage = () => {
   };
 
   // Generate current page data
-  const generateCurrentPageData = () => {
+  const generateCurrentPageData = (): Employee[] => {
     const startIndex = (currentPage - 1) * itemsPerPage;
-    const pageData = [];
+    const pageData: Employee[] = [];
     
     for (let i = 0; i < itemsPerPage; i++) {
       const employeeId = startIndex + i + 1;
@@ -154,9 +157,9 @@ const DataOverviewPage = () => {
   };
 
   // Generate sample issue data for tabs
-  const generateSampleIssueData = (type, count = 3) => {
-    const result = [];
-    let startId = 0;
+  const generateSampleIssueData = (type: 'alias' | 'conflict' | 'missing', count: number = 3): Employee[] => {
+    const result: Employee[] = [];
+    let startId: number = 0;
     
     switch (type) {
       case 'alias':
@@ -193,7 +196,7 @@ const DataOverviewPage = () => {
   };
 
   // Handle data collection process
-  const handleCollectData = () => {
+  const handleCollectData = (): void => {
     setIsCollecting(true);
     // Simulate data collection with a timeout
     setTimeout(() => {
@@ -210,21 +213,21 @@ const DataOverviewPage = () => {
   const router = useRouter();
   
   // Navigation handlers
-  const handleBack = () => {
+  const handleBack = (): void => {
     router.push('/components/FirstTimeSetUp/employees');
   };
 
-  const handleNext = () => {
+  const handleNext = (): void => {
     router.push('/components/FirstTimeSetUp/Anonymization');
   };
 
   // Employee details handling
-  const handleViewDetails = (employee) => {
+  const handleViewDetails = (employee: Employee): void => {
     setSelectedEmployee(employee);
     setShowDetailModal(true);
   };
 
-  const handleCloseModal = () => {
+  const handleCloseModal = (): void => {
     setShowDetailModal(false);
   };
 
@@ -236,7 +239,7 @@ const DataOverviewPage = () => {
   }, [currentPage, dataCollected]);
 
   // Handle updating employee inclusion status
-  const handleUpdateInclusionStatus = (employeeId, newStatus) => {
+  const handleUpdateInclusionStatus = (employeeId: string, newStatus: boolean): void => {
     setEmployeesData(prevData => 
       prevData.map(emp => 
         emp.id === employeeId ? {...emp, isIncluded: newStatus} : emp
@@ -245,7 +248,7 @@ const DataOverviewPage = () => {
   };
 
   // Handle merging emails for a specific employee
-  const handleMergeEmails = (employeeId) => {
+  const handleMergeEmails = (employeeId: string): void => {
     // Update employees with aliases list
     const updatedEmployeesWithAliases = employeesWithAliases.filter(
       emp => emp.id !== employeeId
@@ -278,7 +281,7 @@ const DataOverviewPage = () => {
   };
 
   // Handle merging all emails - removes all duplicate emails
-  const handleMergeAllEmails = () => {
+  const handleMergeAllEmails = (): void => {
     setIsApplyingChanges(true);
     
     // Simulate processing time
@@ -314,7 +317,7 @@ const DataOverviewPage = () => {
   };
 
   // Handle applying conflict resolutions
-  const handleApplyResolutions = () => {
+  const handleApplyResolutions = (): void => {
     setIsApplyingChanges(true);
     
     // Simulate processing time
@@ -347,7 +350,7 @@ const DataOverviewPage = () => {
   };
 
   // Handle saving missing information for an employee
-  const handleSaveInformation = (employeeId) => {
+  const handleSaveInformation = (employeeId: string): void => {
     // Update the list of employees with missing data
     const updatedEmployeesWithMissingData = employeesWithMissingData.filter(
       emp => emp.id !== employeeId
@@ -361,8 +364,8 @@ const DataOverviewPage = () => {
         if (emp.id === employeeId) {
           return {
             ...emp,
-            department: emp.id % 2 === 0 ? "Engineering" : emp.department || "Sales",
-            position: emp.id % 2 === 0 ? "Software Engineer" : emp.position || "VP Sales",
+            department: parseInt(emp.id) % 2 === 0 ? "Engineering" : emp.department || "Sales",
+            position: parseInt(emp.id) % 2 === 0 ? "Software Engineer" : emp.position || "VP Sales",
             hasQualityIssues: emp.issueType === 'missing' ? false : emp.hasQualityIssues,
             issueType: emp.issueType === 'missing' ? null : emp.issueType
           };
@@ -379,7 +382,7 @@ const DataOverviewPage = () => {
   };
 
   // Handle fixing all issues - removes all issue indicators and red tables
-  const handleFixAllIssues = () => {
+  const handleFixAllIssues = (): void => {
     setIsApplyingChanges(true);
     
     // Simulate processing time
@@ -419,7 +422,7 @@ const DataOverviewPage = () => {
   };
 
   // Pagination component
-  const PaginationControl = ({ currentPage, totalPages, onPageChange }) => {
+  const PaginationControl: React.FC<PaginationControlProps> = ({ currentPage, totalPages, onPageChange }) => {
     return (
       <div className="px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
         <div className="flex-1 flex justify-between sm:hidden">
@@ -500,10 +503,8 @@ const DataOverviewPage = () => {
     );
   };
 
-  // ViewDetailsButton component is imported and used directly
-
   // Badge component
-  const Badge = ({ children, className }) => {
+  const Badge: React.FC<BadgeProps> = ({ children, className = '' }) => {
     return (
       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${className}`}>
         {children}
@@ -512,7 +513,13 @@ const DataOverviewPage = () => {
   };
 
   // Button component
-  const Button = ({ onClick, disabled, className, children, variant }) => {
+  const Button: React.FC<ButtonProps> = ({ 
+    onClick, 
+    disabled = false, 
+    className = '', 
+    children, 
+    variant = 'default' 
+  }) => {
     let buttonClass = "inline-flex items-center px-4 py-2 rounded-md shadow-sm text-sm font-medium ";
     
     if (variant === "outline") {
@@ -543,7 +550,7 @@ const DataOverviewPage = () => {
   };
 
   // Employee Detail Modal
-  const EmployeeDetailModal = ({ employee }) => {
+  const EmployeeDetailModal: React.FC<EmployeeDetailModalProps> = ({ employee }) => {
     if (!employee) return null;
     
     return (
@@ -624,43 +631,6 @@ const DataOverviewPage = () => {
             <Button onClick={handleCloseModal}>Close</Button>
           </div>
         </div>
-      </div>
-    );
-  };
-
-  // Tab component
-  const Tabs = ({ value, onValueChange, children, className }) => {
-    return (
-      <div className={className}>
-        {children}
-      </div>
-    );
-  };
-  
-  const TabsList = ({ children, className }) => {
-    return (
-      <div className={className}>
-        {children}
-      </div>
-    );
-  };
-  
-  const TabsTrigger = ({ value, className, children }) => {
-    return (
-      <button
-        className={`${className} ${activeTab === value ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-        onClick={() => setActiveTab(value)}
-      >
-        {children}
-      </button>
-    );
-  };
-  
-  const TabsContent = ({ value, className, children }) => {
-    if (value !== activeTab) return null;
-    return (
-      <div className={className}>
-        {children}
       </div>
     );
   };
@@ -815,406 +785,19 @@ const DataOverviewPage = () => {
               </div>
             </div>
 
-            {/* Data Quality Issues Section */}
-            <div className="mt-8">
-              <h2 className="text-lg font-semibold text-blue-600 mb-4">Data Quality Issues</h2>
-              
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="border-b mb-4">
-                  <TabsTrigger value="aliases" className="px-4 py-2">
-                    Email Aliases
-                    {issueStats.aliasCount > 0 && (
-                      <span className="ml-2 bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded-full text-xs">
-                        {issueStats.aliasCount}
-                      </span>
-                    )}
-                  </TabsTrigger>
-                  <TabsTrigger value="conflicts" className="px-4 py-2">
-                    Data Source Conflicts
-                    {issueStats.conflictCount > 0 && (
-                      <span className="ml-2 bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded-full text-xs">
-                        {issueStats.conflictCount}
-                      </span>
-                    )}
-                  </TabsTrigger>
-                  <TabsTrigger value="missing" className="px-4 py-2">
-                    Missing Data
-                    {issueStats.missingCount > 0 && (
-                      <span className="ml-2 bg-red-100 text-red-800 px-1.5 py-0.5 rounded-full text-xs">
-                        {issueStats.missingCount}
-                      </span>
-                    )}
-                  </TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="aliases" className="mt-2">
-                  {issueStats.aliasCount > 0 ? (
-                    <>
-                      <p className="text-gray-600 mb-4">
-                        We've detected employees with multiple email addresses. Please consolidate these to ensure accurate analysis.
-                      </p>
-                      
-                      {employeesWithAliases.map(employee => (
-                        <div key={employee.id} className="mb-4 pb-4 border-b">
-                          <div className="font-medium mb-2">{employee.name}</div>
-                          <div className="grid md:grid-cols-2 gap-4">
-                            {employee.emails.map((email, index) => (
-                              <div key={index} className="flex items-center p-2 border rounded">
-                                <div className="flex-grow">
-                                  {email.address}
-                                  {email.source && (
-                                    <Badge className="ml-2 bg-gray-100 text-gray-800">
-                                      {email.source}
-                                    </Badge>
-                                  )}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                          <div className="mt-2 flex justify-end">
-                            <Button 
-                              onClick={() => handleMergeEmails(employee.id)}
-                            >
-                              Merge
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center py-12">
-                      <Check className="h-12 w-12 text-green-500 mb-4" />
-                      <p className="text-lg font-medium text-green-600 mb-2">All Email Aliases Resolved</p>
-                      <p className="text-gray-500 text-center max-w-md">
-                        All email aliases have been successfully consolidated. No further action needed.
-                      </p>
-                    </div>
-                  )}
-                </TabsContent>
-                
-                <TabsContent value="conflicts" className="mt-2">
-                  {issueStats.conflictCount > 0 ? (
-                    <>
-                      <p className="text-gray-600 mb-4">
-                        We've found conflicting information across different data sources. Please review and select the correct information.
-                      </p>
-                      
-                      {employeesWithConflicts.map(employee => (
-                        <div key={employee.id} className="mb-6 pb-4 border-b bg-amber-50 p-4 rounded-lg">
-                          <div className="font-medium mb-2">{employee.name}</div>
-                          <div className="text-amber-800 mb-2 text-sm font-medium">
-                            {employee.id % 2 === 0 ? "Department Conflict" : "Position Conflict"}
-                          </div>
-                          
-                          <div className="grid md:grid-cols-3 gap-4">
-                            <div className="bg-white p-4 rounded border">
-                              <div className="font-medium mb-1">Microsoft 365</div>
-                              <div className="font-medium">
-                                {employee.id % 2 === 0 ? "Engineering" : "Finance Director"}
-                              </div>
-                              <div className="text-sm text-gray-500">
-                                {employee.id % 2 === 0 ? "Software Engineer" : "Finance"}
-                              </div>
-                              <div className="mt-4 flex justify-center">
-                                <input type="radio" name={`conflict-${employee.id}`} className="h-4 w-4 text-blue-600" />
-                              </div>
-                            </div>
-                            
-                            <div className="bg-white p-4 rounded border">
-                              <div className="font-medium mb-1">
-                                {employee.id % 2 === 0 ? "Slack" : "Google Workspace"}
-                              </div>
-                              <div className="font-medium">
-                                {employee.id % 2 === 0 ? "Product" : "CFO"}
-                              </div>
-                              <div className="text-sm text-gray-500">
-                                {employee.id % 2 === 0 ? "Software Engineer" : "Finance"}
-                              </div>
-                              <div className="mt-4 flex justify-center">
-                                <input type="radio" name={`conflict-${employee.id}`} className="h-4 w-4 text-blue-600" />
-                              </div>
-                            </div>
-                            
-                            <div className="bg-white p-4 rounded border">
-                              <div className="font-medium mb-1">Combined</div>
-                              <div className="font-medium">
-                                {employee.id % 2 === 0 ? "Engineering" : "Finance Director"}
-                              </div>
-                              <div className="text-sm text-gray-500">
-                                {employee.id % 2 === 0 ? "Software Engineer" : "Finance"}
-                              </div>
-                              <div className="mt-4 flex justify-center">
-                                <input 
-                                  type="radio" 
-                                  name={`conflict-${employee.id}`} 
-                                  className="h-4 w-4 text-blue-600" 
-                                  defaultChecked 
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                      
-                      <div className="flex justify-end mt-4">
-                        <Button 
-                          onClick={handleApplyResolutions}
-                          disabled={isApplyingChanges}
-                        >
-                          {isApplyingChanges ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Applying...
-                            </>
-                          ) : (
-                            'Apply Selected Resolutions'
-                          )}
-                        </Button>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center py-12">
-                      <Check className="h-12 w-12 text-green-500 mb-4" />
-                      <p className="text-lg font-medium text-green-600 mb-2">All Conflicts Resolved</p>
-                      <p className="text-gray-500 text-center max-w-md">
-                        All data source conflicts have been successfully resolved. No further action needed.
-                      </p>
-                    </div>
-                  )}
-                </TabsContent>
-                
-                <TabsContent value="missing" className="mt-2">
-                  {issueStats.missingCount > 0 ? (
-                    <>
-                      <p className="text-gray-600 mb-4">
-                        Some employees have incomplete information. Review and decide how to handle these cases.
-                      </p>
-                      
-                      {employeesWithMissingData.map(employee => (
-                        <div key={employee.id} className="mb-6 pb-4 bg-red-50 p-4 rounded-lg">
-                          <div className="font-medium mb-2">{employee.name}</div>
-                          <div className="text-red-700 mb-3 text-sm">
-                            <span className="font-medium">
-                              {employee.id % 2 === 0
-                                ? "Missing critical information: Department, Position" 
-                                : "Missing information: Location, Hire Date"}
-                            </span>
-                            <span className="ml-3 text-xs bg-red-100 text-red-800 px-2 py-1 rounded">
-                              {employee.id % 2 === 0 ? "High Severity" : "Medium Severity"}
-                            </span>
-                          </div>
-                          
-                          <div className="grid md:grid-cols-2 gap-6">
-                            <div className="bg-white p-4 rounded border">
-                              <div className="font-medium mb-2">Available Information</div>
-                              <div>
-                                <div className="mb-1">
-                                  <span className="font-medium">Email:</span> {employee.emails[0].address}
-                                </div>
-                                <div className="mb-1">
-                                  <span className="font-medium">Sources:</span> {employee.emails[0].source || "Microsoft 365"}
-                                </div>
-                                {employee.id % 2 === 1 && (
-                                  <>
-                                    <div className="mb-1">
-                                      <span className="font-medium">Department:</span> Sales
-                                    </div>
-                                    <div className="mb-1">
-                                      <span className="font-medium">Position:</span> VP Sales
-                                    </div>
-                                  </>
-                                )}
-                              </div>
-                            </div>
-                            
-                            <div className="bg-white p-4 rounded border">
-                              <div className="font-medium mb-2">Fill Missing Data</div>
-                              {employee.id % 2 === 0 ? (
-                                <>
-                                  <div className="mb-3">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
-                                    <select className="w-full p-2 border rounded">
-                                      <option>Select Department</option>
-                                      <option selected>Engineering</option>
-                                      <option>Marketing</option>
-                                      <option>Sales</option>
-                                      <option>Finance</option>
-                                      <option>Product</option>
-                                    </select>
-                                  </div>
-                                  <div className="mb-3">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Position</label>
-                                    <input 
-                                      type="text" 
-                                      placeholder="Enter position" 
-                                      defaultValue="Software Engineer" 
-                                      className="w-full p-2 border rounded" 
-                                    />
-                                  </div>
-                                </>
-                              ) : (
-                                <>
-                                  <div className="mb-3">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                                    <select className="w-full p-2 border rounded">
-                                      <option>Select Location</option>
-                                      <option>New York</option>
-                                      <option selected>San Francisco</option>
-                                      <option>London</option>
-                                      <option>Tokyo</option>
-                                      <option>Remote</option>
-                                    </select>
-                                  </div>
-                                  <div className="mb-3">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Hire Date</label>
-                                    <input 
-                                      type="date" 
-                                      defaultValue="2023-04-15" 
-                                      className="w-full p-2 border rounded" 
-                                    />
-                                  </div>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                          
-                          <div className="mt-4 flex justify-between">
-                            <div>
-                              <Button 
-                                variant="ghost" 
-                                className="mr-2 border border-gray-300 text-gray-700"
-                              >
-                                Skip
-                              </Button>
-                              {employee.id % 2 === 0 ? (
-                                <Button 
-                                  variant="outline" 
-                                  className="border border-red-600 text-red-600"
-                                >
-                                  Exclude from Analysis
-                                </Button>
-                              ) : (
-                                <Button 
-                                  variant="outline" 
-                                  className="border border-gray-500 text-gray-700"
-                                >
-                                  Proceed with Partial Data
-                                </Button>
-                              )}
-                            </div>
-                            <Button 
-                              onClick={() => handleSaveInformation(employee.id)}
-                            >
-                              Save Information
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center py-12">
-                      <Check className="h-12 w-12 text-green-500 mb-4" />
-                      <p className="text-lg font-medium text-green-600 mb-2">All Missing Data Resolved</p>
-                      <p className="text-gray-500 text-center max-w-md">
-                        All employee information has been successfully completed. No further action needed.
-                      </p>
-                    </div>
-                  )}
-                </TabsContent>
-              </Tabs>
-              
-              {/* Data Quality Summary */}
-              <div className="bg-white border rounded-lg p-4 mt-6">
-                <h3 className="font-medium mb-4">Data Quality Summary</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className={`p-3 rounded-lg border ${
-                    issueStats.aliasCount > 0 ? 'bg-amber-50 border-amber-200' : 'bg-green-50 border-green-200'
-                  }`}>
-                    <div className="flex items-start">
-                      {issueStats.aliasCount > 0 ? (
-                        <AlertTriangle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-1 mr-2" />
-                      ) : (
-                        <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-1 mr-2" />
-                      )}
-                      <div>
-                        <div className={`font-medium ${
-                          issueStats.aliasCount > 0 ? 'text-amber-800' : 'text-green-800'
-                        }`}>Email Aliases</div>
-                        <div className={issueStats.aliasCount > 0 ? 'text-amber-700' : 'text-green-700'}>
-                          {issueStats.aliasCount > 0 
-                            ? `${issueStats.aliasCount} employees with multiple emails` 
-                            : 'All aliases resolved'}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className={`p-3 rounded-lg border ${
-                    issueStats.conflictCount > 0 ? 'bg-gray-50 border-gray-200' : 'bg-green-50 border-green-200'
-                  }`}>
-                    <div className="flex items-start">
-                      {issueStats.conflictCount > 0 ? (
-                        <AlertTriangle className="h-5 w-5 text-gray-500 flex-shrink-0 mt-1 mr-2" />
-                      ) : (
-                        <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-1 mr-2" />
-                      )}
-                      <div>
-                        <div className={`font-medium ${
-                          issueStats.conflictCount > 0 ? 'text-gray-800' : 'text-green-800'
-                        }`}>Source Conflicts</div>
-                        <div className={issueStats.conflictCount > 0 ? 'text-gray-700' : 'text-green-700'}>
-                          {issueStats.conflictCount > 0 
-                            ? `${issueStats.conflictCount} employees with conflicting data` 
-                            : 'All conflicts resolved'}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className={`p-3 rounded-lg border ${
-                    issueStats.missingCount > 0 ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'
-                  }`}>
-                    <div className="flex items-start">
-                      {issueStats.missingCount > 0 ? (
-                        <AlertTriangle className="h-5 w-5 text-red-500 flex-shrink-0 mt-1 mr-2" />
-                      ) : (
-                        <Check className="h-5 w-5 text-green-500 flex-shrink-0 mt-1 mr-2" />
-                      )}
-                      <div>
-                        <div className={`font-medium ${
-                          issueStats.missingCount > 0 ? 'text-red-800' : 'text-green-800'
-                        }`}>Missing Data</div>
-                        <div className={issueStats.missingCount > 0 ? 'text-red-700' : 'text-green-700'}>
-                          {issueStats.missingCount > 0 
-                            ? `${issueStats.missingCount} employees with incomplete information` 
-                            : 'All missing data resolved'}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-4 text-gray-600">
-                  {(issueStats.aliasCount > 0 || issueStats.conflictCount > 0 || issueStats.missingCount > 0) 
-                    ? "Resolve data quality issues before proceeding to analyze employee data."
-                    : "All data quality issues have been resolved. You can proceed to the next step."}
-                </div>
-                <div className="mt-3 flex justify-end">
-                  <Button 
-                    onClick={handleFixAllIssues}
-                    disabled={isApplyingChanges || (issueStats.aliasCount === 0 && issueStats.conflictCount === 0 && issueStats.missingCount === 0)}
-                  >
-                    {isApplyingChanges ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Fixing...
-                      </>
-                    ) : (
-                      'Fix All Issues'
-                    )}
-                  </Button>
-                </div>
-              </div>
-            </div>
+            {/* Data Quality Issues Section - Now using the separate component */}
+            <DataQualityIssues
+              employeesWithAliases={employeesWithAliases}
+              employeesWithConflicts={employeesWithConflicts}
+              employeesWithMissingData={employeesWithMissingData}
+              issueStats={issueStats}
+              isApplyingChanges={isApplyingChanges}
+              handleMergeEmails={handleMergeEmails}
+              handleApplyResolutions={handleApplyResolutions}
+              handleSaveInformation={handleSaveInformation}
+              handleFixAllIssues={handleFixAllIssues}
+              handleMergeAllEmails={handleMergeAllEmails}
+            />
           </>
         )}
       </div>

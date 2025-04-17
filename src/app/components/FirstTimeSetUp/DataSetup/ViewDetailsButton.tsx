@@ -34,11 +34,8 @@ const ViewDetailsButton: React.FC<ViewDetailsButtonProps> = ({ employee, onViewD
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
-    // Log the employee data for debugging
     console.log("View details clicked for employee:", employee.id, employee.name);
     
-    // Create a deep copy of the employee to ensure all data is passed
     const employeeCopy = JSON.parse(JSON.stringify(employee));
     onViewDetails(employeeCopy);
   };

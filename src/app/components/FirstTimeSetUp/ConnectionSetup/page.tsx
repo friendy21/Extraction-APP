@@ -106,6 +106,15 @@ type JiraConfig = {
   instanceUrl: string;
 };
 
+// Define testing stage and test status types
+type TestingStage = "initializing" | "validating" | "connecting" | "completed" | "error" | null;
+type TestStatus = {
+  status: "success" | "error" | null;
+  message: string;
+  details: string;
+  timestamp: string;
+} | null;
+
 // Mock Connection Stats
 const MOCK_STATS: Record<string, ConnectionStats> = {
   microsoft365: {
@@ -199,18 +208,52 @@ const ConnectionAPI = {
     };
   },
 
-  // **New Method: Test Connection**
+  // Enhanced Test Connection Method
   testConnection: async (service: string, config: any): Promise<{ success: boolean; message: string }> => {
     console.log(`Testing connection for ${service} with config:`, config);
+    
+    // Simulate different network conditions
+    const simulateNetworkDelay = async () => {
+      const randomDelay = Math.floor(Math.random() * 1000) + 1500; // 1.5-2.5 seconds
+      await new Promise(resolve => setTimeout(resolve, randomDelay));
+    };
+    
+    // Step 1: Validate configuration (simulate 10% chance of config error for demo)
+    await simulateNetworkDelay();
+    const configError = Math.random() < 0.1;
+    
+    if (configError) {
+      console.log(`Testing ${service}: Configuration validation failed`);
+      return { 
+        success: false, 
+        message: "Configuration validation failed. Please check your credentials." 
+      };
+    }
+    
+    // Step 2: Test network connection (simulate 10% chance of network error for demo)
+    await simulateNetworkDelay();
+    const networkError = Math.random() < 0.1;
+    
+    if (networkError) {
+      console.log(`Testing ${service}: Network connection failed`);
+      return { 
+        success: false, 
+        message: "Network error. Could not reach the service. Please check your internet connection." 
+      };
+    }
+    
+    // Step 3: Authentication test
+    await simulateNetworkDelay();
+    
     let isValid = false;
     let message = "Invalid credentials";
 
     if (service === 'customapi') {
       if (config.api_url && config.api_key && config.auth_type) {
         isValid = true;
-        message = "Connection successful";
+        message = "Connection successful! API endpoint is accessible and credentials are valid.";
       } else {
-        message = "Missing required fields";
+        message = "Missing required fields. Please provide API URL, API Key, and Auth Type.";
       }
     } else {
       switch (service) {
@@ -221,7 +264,9 @@ const ConnectionAPI = {
             config.tenant_id?.startsWith('tenant-')
           ) {
             isValid = true;
-            message = "Connection successful";
+            message = "Connection successful! Microsoft 365 services are accessible.";
+          } else {
+            message = "Invalid Microsoft 365 credentials. Please check your Client ID, Client Secret, and Tenant ID.";
           }
           break;
         case 'googleWorkspace':
@@ -231,7 +276,9 @@ const ConnectionAPI = {
             config.account_id?.endsWith('.com')
           ) {
             isValid = true;
-            message = "Connection successful";
+            message = "Connection successful! Google Workspace services are accessible.";
+          } else {
+            message = "Invalid Google Workspace credentials. Please check your Client ID, Client Secret, and Account ID.";
           }
           break;
         case 'dropbox':
@@ -240,7 +287,9 @@ const ConnectionAPI = {
             config.client_secret?.startsWith('dropbox-secret-')
           ) {
             isValid = true;
-            message = "Connection successful";
+            message = "Connection successful! Dropbox services are accessible.";
+          } else {
+            message = "Invalid Dropbox credentials. Please check your App Key and App Secret.";
           }
           break;
         case 'slack':
@@ -250,7 +299,9 @@ const ConnectionAPI = {
             config.workspace_id?.startsWith('T')
           ) {
             isValid = true;
-            message = "Connection successful";
+            message = "Connection successful! Slack services are accessible.";
+          } else {
+            message = "Invalid Slack credentials. Please check your Client ID, Client Secret, and Workspace ID.";
           }
           break;
         case 'zoom':
@@ -260,7 +311,9 @@ const ConnectionAPI = {
             config.account_id?.startsWith('zoom-account-')
           ) {
             isValid = true;
-            message = "Connection successful";
+            message = "Connection successful! Zoom services are accessible.";
+          } else {
+            message = "Invalid Zoom credentials. Please check your Client ID, Client Secret, and Account ID.";
           }
           break;
         case 'jira':
@@ -270,7 +323,9 @@ const ConnectionAPI = {
             config.instance_url?.startsWith('https://')
           ) {
             isValid = true;
-            message = "Connection successful";
+            message = "Connection successful! Jira services are accessible.";
+          } else {
+            message = "Invalid Jira credentials. Please check your Client ID, Client Secret, and Instance URL.";
           }
           break;
         default:
@@ -278,11 +333,41 @@ const ConnectionAPI = {
           message = "Service not supported";
       }
     }
-
-    // Simulate a longer delay to mimic an API call
-    await new Promise(resolve => setTimeout(resolve, 2500));
+    
+    console.log(`Testing ${service} completed with result:`, { success: isValid, message });
     return { success: isValid, message };
-  },
+  }
+};
+
+// Connection Test Results Component
+const ConnectionTestResults: React.FC<{
+  status: "success" | "error" | null;
+  message: string;
+  details: string;
+  timestamp: string;
+}> = ({ status, message, details, timestamp }) => {
+  return (
+    <div className={`mt-4 p-4 rounded-md ${status === "success" ? "bg-green-50 border border-green-200" : "bg-red-50 border border-red-200"}`}>
+      <div className="flex items-start">
+        {status === "success" ? (
+          <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5 mr-2" />
+        ) : (
+          <AlertTriangle className="h-5 w-5 text-red-500 mt-0.5 mr-2" />
+        )}
+        <div>
+          <h4 className={`font-medium ${status === "success" ? "text-green-800" : "text-red-800"}`}>
+            {message}
+          </h4>
+          <p className={`text-sm ${status === "success" ? "text-green-700" : "text-red-700"}`}>
+            {details}
+          </p>
+          <p className="text-xs text-gray-500 mt-1">
+            {new Date(timestamp).toLocaleString()}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 // Modal component for configuration forms
@@ -584,6 +669,10 @@ const ConnectionPage: React.FC = () => {
   const [activeStats, setActiveStats] = useState<ConnectionStats | null>(null);
   const [isLoadingStats, setIsLoadingStats] = useState(false);
   const [isTestingConnection, setIsTestingConnection] = useState(false);
+  
+  // New state for enhanced testing
+  const [testingStage, setTestingStage] = useState<TestingStage>(null);
+  const [testStatus, setTestStatus] = useState<TestStatus>(null);
 
   const [customAPIs, setCustomAPIs] = useState<CustomAPI[]>([
     {
@@ -683,12 +772,87 @@ const ConnectionPage: React.FC = () => {
   const router = useRouter();
   const { setCurrentStep } = useStep();
 
+  // Enhanced test connection function
+  const testConnection = async (service: string, config: any) => {
+    try {
+      setIsTestingConnection(true);
+      setTestingStage("initializing");
+      setTestStatus(null);
+      
+      // Stage 1: Validating configuration
+      toast({
+        title: "Testing Connection",
+        description: "Validating configuration...",
+      });
+      
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      setTestingStage("validating");
+      
+      // Stage 2: Attempting connection
+      toast({
+        title: "Testing Connection",
+        description: "Attempting to connect...",
+      });
+      
+      setTestingStage("connecting");
+      const result = await ConnectionAPI.testConnection(service, config);
+      setTestingStage("completed");
+      
+      if (result.success) {
+        setTestStatus({
+          status: "success",
+          message: result.message,
+          details: `Successfully connected to ${service}!`,
+          timestamp: new Date().toISOString()
+        });
+        
+        toast({
+          title: "Connection Successful",
+          description: "Test connection completed successfully.",
+        });
+      } else {
+        setTestStatus({
+          status: "error",
+          message: result.message,
+          details: `Failed to connect to ${service}. Please check your credentials.`,
+          timestamp: new Date().toISOString()
+        });
+        
+        toast({
+          title: "Connection Failed",
+          description: result.message,
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      setTestingStage("error");
+      setTestStatus({
+        status: "error",
+        message: "An unexpected error occurred",
+        details: error instanceof Error ? error.message : "Unknown error",
+        timestamp: new Date().toISOString()
+      });
+      
+      toast({
+        title: "Error",
+        description: "An error occurred while testing the connection.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsTestingConnection(false);
+    }
+  };
+
   const showConfigModal = (service: string) => {
     setActiveModal(service);
+    setTestStatus(null);
+    setTestingStage(null);
   };
 
   const showSettingsModal = (service: string) => {
     setActiveModal(`${service}_settings`);
+    setTestStatus(null);
+    setTestingStage(null);
   };
 
   const showStatsModal = async (service: string) => {
@@ -703,6 +867,8 @@ const ConnectionPage: React.FC = () => {
   const showCustomAPISettingsModal = (apiId: string) => {
     setEditingApiId(apiId);
     setActiveModal('customAPI_settings');
+    setTestStatus(null);
+    setTestingStage(null);
     const api = customAPIs.find(api => api.id === apiId);
     if (api) {
       setCustomAPIForm({
@@ -788,12 +954,29 @@ const ConnectionPage: React.FC = () => {
           throw new Error('Unknown service');
       }
 
+      // Show connecting status
+      toast({
+        title: "Connecting",
+        description: `Connecting to ${service}...`,
+      });
+      
+      // Visual loading indicator for connection
+      setIsTestingConnection(true);
+      setTestingStage("connecting");
+
       const result = await ConnectionAPI.createConnection(service, config);
       setConnectionIds(prev => ({
         ...prev,
         [service]: result.connection_id
       }));
+      
+      // Simulate a delay for the connection process
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
       const connectResult = await ConnectionAPI.connect(result.connection_id);
+      
+      setIsTestingConnection(false);
+      setTestingStage(null);
       
       if (connectResult.status === 'connected') {
         setConnections(prev => ({
@@ -804,20 +987,46 @@ const ConnectionPage: React.FC = () => {
           title: "Connection Successful",
           description: `Successfully connected to ${service}.`,
         });
+        
+        // Set success status
+        setTestStatus({
+          status: "success",
+          message: "Connection established successfully",
+          details: `${service} is now connected to your account.`,
+          timestamp: new Date().toISOString()
+        });
       } else {
         toast({
           title: "Connection Failed",
           description: connectResult.error || `Failed to connect to ${service}.`,
           variant: "destructive",
         });
+        
+        // Set error status
+        setTestStatus({
+          status: "error",
+          message: "Connection failed",
+          details: connectResult.error || `Could not establish connection to ${service}.`,
+          timestamp: new Date().toISOString()
+        });
       }
       setActiveModal(null);
     } catch (error) {
+      setIsTestingConnection(false);
+      setTestingStage(null);
       console.error(`Error setting up ${service}:`, error);
       toast({
         title: "Error",
         description: `Failed to set up ${service}. Please check your credentials.`,
         variant: "destructive",
+      });
+      
+      // Set error status
+      setTestStatus({
+        status: "error",
+        message: "Connection error",
+        details: error instanceof Error ? error.message : `An error occurred while connecting to ${service}.`,
+        timestamp: new Date().toISOString()
       });
     }
   };
@@ -828,6 +1037,15 @@ const ConnectionPage: React.FC = () => {
 
   const disconnectService = async (service: keyof ConnectionStatus) => {
     try {
+      // Visual indicator for disconnection
+      toast({
+        title: "Disconnecting",
+        description: `Disconnecting from ${service}...`,
+      });
+      
+      // Simulate network delay
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
       setConnections(prev => ({
         ...prev,
         [service]: false
@@ -852,17 +1070,26 @@ const ConnectionPage: React.FC = () => {
   };
 
   const disconnectCustomAPI = (apiId: string) => {
-    setCustomAPIs(prevAPIs => 
-      prevAPIs.map(api => 
-        api.id === apiId 
-          ? { ...api, isConnected: false, connectionId: undefined, stats: undefined } 
-          : api
-      )
-    );
+    // Visual indicator for disconnection
     toast({
-      title: "Disconnected",
-      description: "Successfully disconnected the custom API.",
+      title: "Disconnecting",
+      description: "Disconnecting from custom API...",
     });
+    
+    // Simulate network delay
+    setTimeout(() => {
+      setCustomAPIs(prevAPIs => 
+        prevAPIs.map(api => 
+          api.id === apiId 
+            ? { ...api, isConnected: false, connectionId: undefined, stats: undefined } 
+            : api
+        )
+      );
+      toast({
+        title: "Disconnected",
+        description: "Successfully disconnected the custom API.",
+      });
+    }, 1500);
   };
 
   const addCustomAPI = () => {
@@ -902,6 +1129,16 @@ const ConnectionPage: React.FC = () => {
       const api = customAPIs.find(api => api.id === editingApiId);
       if (!api) return;
       
+      // Show connecting status
+      toast({
+        title: "Connecting",
+        description: "Connecting to custom API...",
+      });
+      
+      // Visual loading indicator for connection
+      setIsTestingConnection(true);
+      setTestingStage("connecting");
+      
       const config = {
         api_url: customAPIForm.apiUrl,
         api_key: customAPIForm.apiKey,
@@ -909,8 +1146,14 @@ const ConnectionPage: React.FC = () => {
         headers: customAPIForm.headers,
       };
       
+      // Simulate network delay
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
       const result = await ConnectionAPI.createConnection('customapi', config);
       const connectResult = await ConnectionAPI.connect(result.connection_id);
+      
+      setIsTestingConnection(false);
+      setTestingStage(null);
       
       if (connectResult.status === 'connected') {
         setCustomAPIs(prevAPIs => 
@@ -932,74 +1175,82 @@ const ConnectionPage: React.FC = () => {
           title: "Connection Successful",
           description: `Successfully connected to custom API.`,
         });
+        
+        // Set success status
+        setTestStatus({
+          status: "success",
+          message: "Connection established successfully",
+          details: `Custom API is now connected to your account.`,
+          timestamp: new Date().toISOString()
+        });
       } else {
         toast({
           title: "Connection Failed",
           description: connectResult.error || `Failed to connect to custom API.`,
           variant: "destructive",
         });
+        
+        // Set error status
+        setTestStatus({
+          status: "error",
+          message: "Connection failed",
+          details: connectResult.error || "Could not establish connection to custom API.",
+          timestamp: new Date().toISOString()
+        });
       }
       setActiveModal(null);
       setEditingApiId(null);
     } catch (error) {
+      setIsTestingConnection(false);
+      setTestingStage(null);
       console.error("Error setting up custom API:", error);
       toast({
         title: "Error",
         description: "Failed to set up custom API. Please check your configuration.",
         variant: "destructive",
       });
+      
+      // Set error status
+      setTestStatus({
+        status: "error",
+        message: "Connection error",
+        details: error instanceof Error ? error.message : "An error occurred while connecting to custom API.",
+        timestamp: new Date().toISOString()
+      });
     }
   };
 
   const updateCustomAPISettings = () => {
     if (!editingApiId) return;
-
-    setCustomAPIs(prevAPIs => 
-      prevAPIs.map(api => 
-        api.id === editingApiId 
-          ? { 
-              ...api,
-              apiUrl: customAPIForm.apiUrl,
-              apiKey: customAPIForm.apiKey,
-              headers: customAPIForm.headers,
-              authType: customAPIForm.authType,
-            } 
-          : api
-      )
-    );
-    setActiveModal(null);
-    setEditingApiId(null);
+    
+    // Show updating status
     toast({
-      title: "Settings Updated",
-      description: "Successfully updated custom API settings.",
+      title: "Updating",
+      description: "Updating custom API settings...",
     });
-  };
-
-  const testConnection = async (service: string, config: any) => {
-    try {
-      setIsTestingConnection(true);
-      const result = await ConnectionAPI.testConnection(service, config);
-      if (result.success) {
-        toast({
-          title: "Test Successful",
-          description: result.message,
-        });
-      } else {
-        toast({
-          title: "Test Failed",
-          description: result.message,
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
+    
+    // Simulate network delay
+    setTimeout(() => {
+      setCustomAPIs(prevAPIs => 
+        prevAPIs.map(api => 
+          api.id === editingApiId 
+            ? { 
+                ...api,
+                apiUrl: customAPIForm.apiUrl,
+                apiKey: customAPIForm.apiKey,
+                headers: customAPIForm.headers,
+                authType: customAPIForm.authType,
+              } 
+            : api
+        )
+      );
+      setActiveModal(null);
+      setEditingApiId(null);
       toast({
-        title: "Error",
-        description: "An error occurred while testing the connection.",
-        variant: "destructive",
+        title: "Settings Updated",
+        description: "Successfully updated custom API settings.",
       });
-    } finally {
-      setIsTestingConnection(false);
-    }
+    }, 1500);
   };
 
   const isAnyConnected = Object.values(connections).some(Boolean) || 
@@ -1097,6 +1348,34 @@ const ConnectionPage: React.FC = () => {
           )}
         </CardFooter>
       </Card>
+    );
+  };
+
+  // Render test connection button
+  const renderTestConnectionButton = (service: string, config: any) => {
+    return (
+      <Button 
+        type="button" 
+        variant="outline" 
+        onClick={() => testConnection(service, config)}
+        disabled={isTestingConnection}
+        className={`w-36 ${isTestingConnection ? 'bg-blue-50' : ''}`}
+      >
+        {isTestingConnection ? (
+          <div className="flex items-center justify-center">
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            <span className="text-xs">
+              {testingStage === "initializing" && "Initializing..."}
+              {testingStage === "validating" && "Validating..."}
+              {testingStage === "connecting" && "Connecting..."}
+              {testingStage === "completed" && "Finishing..."}
+              {testingStage === "error" && "Error..."}
+            </span>
+          </div>
+        ) : (
+          "Test Connection"
+        )}
+      </Button>
     );
   };
 
@@ -1252,7 +1531,11 @@ const ConnectionPage: React.FC = () => {
       {/* Microsoft 365 Config Modal */}
       <ConfigModal
         isOpen={activeModal === 'microsoft365'}
-        onClose={() => setActiveModal(null)}
+        onClose={() => {
+          setActiveModal(null);
+          setTestStatus(null);
+          setTestingStage(null);
+        }}
         title="Microsoft 365 Configuration"
       >
         <form onSubmit={(e) => {
@@ -1297,33 +1580,48 @@ const ConnectionPage: React.FC = () => {
               />
               <p className="text-xs text-gray-500 mt-1">This URI needs to be registered in your Azure AD app.</p>
             </div>
+            
+            {/* Test Results Section */}
+            {testStatus && (
+              <ConnectionTestResults 
+                status={testStatus.status}
+                message={testStatus.message}
+                details={testStatus.details}
+                timestamp={testStatus.timestamp}
+              />
+            )}
+            
             <div className="flex justify-end space-x-2 pt-4">
-              <Button type="button" variant="outline" onClick={() => setActiveModal(null)}>Cancel</Button>
               <Button 
                 type="button" 
                 variant="outline" 
                 onClick={() => {
-                  const config = {
-                    tenant_id: microsoft365Form.tenantId,
-                    client_id: microsoft365Form.clientId,
-                    client_secret: microsoft365Form.clientSecret,
-                    redirect_uri: microsoft365Form.redirectUri,
-                  };
-                  testConnection('microsoft365', config);
+                  setActiveModal(null);
+                  setTestStatus(null);
+                  setTestingStage(null);
                 }}
+              >
+                Cancel
+              </Button>
+              {renderTestConnectionButton('microsoft365', {
+                tenant_id: microsoft365Form.tenantId,
+                client_id: microsoft365Form.clientId,
+                client_secret: microsoft365Form.clientSecret,
+                redirect_uri: microsoft365Form.redirectUri,
+              })}
+              <Button 
+                type="submit" 
                 disabled={isTestingConnection}
-                className="w-32"
               >
                 {isTestingConnection ? (
                   <div className="flex items-center">
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Testing...
+                    Connecting...
                   </div>
                 ) : (
-                  "Test Connection"
+                  "Connect"
                 )}
               </Button>
-              <Button type="submit">Connect</Button>
             </div>
           </div>
         </form>
@@ -1332,7 +1630,11 @@ const ConnectionPage: React.FC = () => {
       {/* Microsoft 365 Settings Modal */}
       <ConfigModal
         isOpen={activeModal === 'microsoft365_settings'}
-        onClose={() => setActiveModal(null)}
+        onClose={() => {
+          setActiveModal(null);
+          setTestStatus(null);
+          setTestingStage(null);
+        }}
         title="Microsoft 365 Settings"
       >
         <form onSubmit={(e) => {
@@ -1376,32 +1678,35 @@ const ConnectionPage: React.FC = () => {
                 required
               />
             </div>
+            
+            {/* Test Results Section */}
+            {testStatus && (
+              <ConnectionTestResults 
+                status={testStatus.status}
+                message={testStatus.message}
+                details={testStatus.details}
+                timestamp={testStatus.timestamp}
+              />
+            )}
+            
             <div className="flex justify-end space-x-2 pt-4">
-              <Button type="button" variant="outline" onClick={() => setActiveModal(null)}>Cancel</Button>
               <Button 
                 type="button" 
                 variant="outline" 
                 onClick={() => {
-                  const config = {
-                    tenant_id: microsoft365Form.tenantId,
-                    client_id: microsoft365Form.clientId,
-                    client_secret: microsoft365Form.clientSecret,
-                    redirect_uri: microsoft365Form.redirectUri,
-                  };
-                  testConnection('microsoft365', config);
+                  setActiveModal(null);
+                  setTestStatus(null);
+                  setTestingStage(null);
                 }}
-                disabled={isTestingConnection}
-                className="w-32"
               >
-                {isTestingConnection ? (
-                  <div className="flex items-center">
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Testing...
-                  </div>
-                ) : (
-                  "Test Connection"
-                )}
+                Cancel
               </Button>
+              {renderTestConnectionButton('microsoft365', {
+                tenant_id: microsoft365Form.tenantId,
+                client_id: microsoft365Form.clientId,
+                client_secret: microsoft365Form.clientSecret,
+                redirect_uri: microsoft365Form.redirectUri,
+              })}
               <Button type="submit">Save Changes</Button>
             </div>
           </div>
@@ -1411,7 +1716,11 @@ const ConnectionPage: React.FC = () => {
       {/* Google Workspace Config Modal */}
       <ConfigModal
         isOpen={activeModal === 'googleWorkspace'}
-        onClose={() => setActiveModal(null)}
+        onClose={() => {
+          setActiveModal(null);
+          setTestStatus(null);
+          setTestingStage(null);
+        }}
         title="Google Workspace Configuration"
       >
         <form onSubmit={(e) => {
@@ -1468,33 +1777,48 @@ const ConnectionPage: React.FC = () => {
               />
               <p className="text-xs text-gray-500 mt-1">Space-separated list of OAuth scopes needed for your integration.</p>
             </div>
+            
+            {/* Test Results Section */}
+            {testStatus && (
+              <ConnectionTestResults 
+                status={testStatus.status}
+                message={testStatus.message}
+                details={testStatus.details}
+                timestamp={testStatus.timestamp}
+              />
+            )}
+            
             <div className="flex justify-end space-x-2 pt-4">
-              <Button type="button" variant="outline" onClick={() => setActiveModal(null)}>Cancel</Button>
               <Button 
                 type="button" 
                 variant="outline" 
                 onClick={() => {
-                  const config = {
-                    account_id: googleWorkspaceForm.accountId,
-                    client_id: googleWorkspaceForm.clientId,
-                    client_secret: googleWorkspaceForm.clientSecret,
-                    redirect_uri: googleWorkspaceForm.redirectUri,
-                  };
-                  testConnection('googleWorkspace', config);
+                  setActiveModal(null);
+                  setTestStatus(null);
+                  setTestingStage(null);
                 }}
+              >
+                Cancel
+              </Button>
+              {renderTestConnectionButton('googleWorkspace', {
+                account_id: googleWorkspaceForm.accountId,
+                client_id: googleWorkspaceForm.clientId,
+                client_secret: googleWorkspaceForm.clientSecret,
+                redirect_uri: googleWorkspaceForm.redirectUri,
+              })}
+              <Button 
+                type="submit" 
                 disabled={isTestingConnection}
-                className="w-32"
               >
                 {isTestingConnection ? (
                   <div className="flex items-center">
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Testing...
+                    Connecting...
                   </div>
                 ) : (
-                  "Test Connection"
+                  "Connect"
                 )}
               </Button>
-              <Button type="submit">Connect</Button>
             </div>
           </div>
         </form>
@@ -1503,7 +1827,11 @@ const ConnectionPage: React.FC = () => {
       {/* Google Workspace Settings Modal */}
       <ConfigModal
         isOpen={activeModal === 'googleWorkspace_settings'}
-        onClose={() => setActiveModal(null)}
+        onClose={() => {
+          setActiveModal(null);
+          setTestStatus(null);
+          setTestingStage(null);
+        }}
         title="Google Workspace Settings"
       >
         <form onSubmit={(e) => {
@@ -1557,32 +1885,35 @@ const ConnectionPage: React.FC = () => {
                 required
               />
             </div>
+            
+            {/* Test Results Section */}
+            {testStatus && (
+              <ConnectionTestResults 
+                status={testStatus.status}
+                message={testStatus.message}
+                details={testStatus.details}
+                timestamp={testStatus.timestamp}
+              />
+            )}
+            
             <div className="flex justify-end space-x-2 pt-4">
-              <Button type="button" variant="outline" onClick={() => setActiveModal(null)}>Cancel</Button>
               <Button 
                 type="button" 
                 variant="outline" 
                 onClick={() => {
-                  const config = {
-                    account_id: googleWorkspaceForm.accountId,
-                    client_id: googleWorkspaceForm.clientId,
-                    client_secret: googleWorkspaceForm.clientSecret,
-                    redirect_uri: googleWorkspaceForm.redirectUri,
-                  };
-                  testConnection('googleWorkspace', config);
+                  setActiveModal(null);
+                  setTestStatus(null);
+                  setTestingStage(null);
                 }}
-                disabled={isTestingConnection}
-                className="w-32"
               >
-                {isTestingConnection ? (
-                  <div className="flex items-center">
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Testing...
-                  </div>
-                ) : (
-                  "Test Connection"
-                )}
+                Cancel
               </Button>
+              {renderTestConnectionButton('googleWorkspace', {
+                account_id: googleWorkspaceForm.accountId,
+                client_id: googleWorkspaceForm.clientId,
+                client_secret: googleWorkspaceForm.clientSecret,
+                redirect_uri: googleWorkspaceForm.redirectUri,
+              })}
               <Button type="submit">Save Changes</Button>
             </div>
           </div>
@@ -1592,7 +1923,11 @@ const ConnectionPage: React.FC = () => {
       {/* Dropbox Config Modal */}
       <ConfigModal
         isOpen={activeModal === 'dropbox'}
-        onClose={() => setActiveModal(null)}
+        onClose={() => {
+          setActiveModal(null);
+          setTestStatus(null);
+          setTestingStage(null);
+        }}
         title="Dropbox Configuration"
       >
         <form onSubmit={(e) => {
@@ -1627,32 +1962,47 @@ const ConnectionPage: React.FC = () => {
                 required
               />
             </div>
+            
+            {/* Test Results Section */}
+            {testStatus && (
+              <ConnectionTestResults 
+                status={testStatus.status}
+                message={testStatus.message}
+                details={testStatus.details}
+                timestamp={testStatus.timestamp}
+              />
+            )}
+            
             <div className="flex justify-end space-x-2 pt-4">
-              <Button type="button" variant="outline" onClick={() => setActiveModal(null)}>Cancel</Button>
               <Button 
                 type="button" 
                 variant="outline" 
                 onClick={() => {
-                  const config = {
-                    app_key: dropboxForm.appKey,
-                    client_secret: dropboxForm.appSecret,
-                    redirect_uri: dropboxForm.redirectUri,
-                  };
-                  testConnection('dropbox', config);
+                  setActiveModal(null);
+                  setTestStatus(null);
+                  setTestingStage(null);
                 }}
+              >
+                Cancel
+              </Button>
+              {renderTestConnectionButton('dropbox', {
+                app_key: dropboxForm.appKey,
+                client_secret: dropboxForm.appSecret,
+                redirect_uri: dropboxForm.redirectUri,
+              })}
+              <Button 
+                type="submit" 
                 disabled={isTestingConnection}
-                className="w-32"
               >
                 {isTestingConnection ? (
                   <div className="flex items-center">
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Testing...
+                    Connecting...
                   </div>
                 ) : (
-                  "Test Connection"
+                  "Connect"
                 )}
               </Button>
-              <Button type="submit">Connect</Button>
             </div>
           </div>
         </form>
@@ -1661,7 +2011,11 @@ const ConnectionPage: React.FC = () => {
      {/* Dropbox Settings Modal */}
       <ConfigModal
         isOpen={activeModal === 'dropbox_settings'}
-        onClose={() => setActiveModal(null)}
+        onClose={() => {
+          setActiveModal(null);
+          setTestStatus(null);
+          setTestingStage(null);
+        }}
         title="Dropbox Settings"
       >
         <form onSubmit={(e) => {
@@ -1696,42 +2050,34 @@ const ConnectionPage: React.FC = () => {
                 required
               />
             </div>
+            
+            {/* Test Results Section */}
+            {testStatus && (
+              <ConnectionTestResults 
+                status={testStatus.status}
+                message={testStatus.message}
+                details={testStatus.details}
+                timestamp={testStatus.timestamp}
+              />
+            )}
+            
             <div className="flex justify-end space-x-2 pt-4">
-              <Button type="button" variant="outline" onClick={() => setActiveModal(null)}>Cancel</Button>
               <Button 
                 type="button" 
                 variant="outline" 
-                onClick={async () => {
-                  const config = {
-                    app_key: dropboxForm.appKey,
-                    client_secret: dropboxForm.appSecret,
-                    redirect_uri: dropboxForm.redirectUri,
-                  };
-                  try {
-                    const result = await ConnectionAPI.testConnection('dropbox', config);
-                    if (result.success) {
-                      toast({
-                        title: "Test Successful",
-                        description: result.message,
-                      });
-                    } else {
-                      toast({
-                        title: "Test Failed",
-                        description: result.message,
-                        variant: "destructive",
-                      });
-                    }
-                  } catch (error) {
-                    toast({
-                      title: "Error",
-                      description: "An error occurred while testing the connection.",
-                      variant: "destructive",
-                    });
-                  }
+                onClick={() => {
+                  setActiveModal(null);
+                  setTestStatus(null);
+                  setTestingStage(null);
                 }}
               >
-                Test Connection
+                Cancel
               </Button>
+              {renderTestConnectionButton('dropbox', {
+                app_key: dropboxForm.appKey,
+                client_secret: dropboxForm.appSecret,
+                redirect_uri: dropboxForm.redirectUri,
+              })}
               <Button type="submit">Save Changes</Button>
             </div>
           </div>
@@ -1741,7 +2087,11 @@ const ConnectionPage: React.FC = () => {
       {/* Slack Config Modal */}
       <ConfigModal
         isOpen={activeModal === 'slack'}
-        onClose={() => setActiveModal(null)}
+        onClose={() => {
+          setActiveModal(null);
+          setTestStatus(null);
+          setTestingStage(null);
+        }}
         title="Slack Configuration"
       >
         <form onSubmit={(e) => {
@@ -1797,44 +2147,48 @@ const ConnectionPage: React.FC = () => {
               />
               <p className="text-xs text-gray-500 mt-1">Space-separated list of scopes needed for your integration.</p>
             </div>
+            
+            {/* Test Results Section */}
+            {testStatus && (
+              <ConnectionTestResults 
+                status={testStatus.status}
+                message={testStatus.message}
+                details={testStatus.details}
+                timestamp={testStatus.timestamp}
+              />
+            )}
+            
             <div className="flex justify-end space-x-2 pt-4">
-              <Button type="button" variant="outline" onClick={() => setActiveModal(null)}>Cancel</Button>
               <Button 
                 type="button" 
                 variant="outline" 
-                onClick={async () => {
-                  const config = {
-                    workspace_id: slackForm.workspaceId,
-                    client_id: slackForm.clientId,
-                    client_secret: slackForm.clientSecret,
-                    redirect_uri: slackForm.redirectUri,
-                  };
-                  try {
-                    const result = await ConnectionAPI.testConnection('slack', config);
-                    if (result.success) {
-                      toast({
-                        title: "Test Successful",
-                        description: result.message,
-                      });
-                    } else {
-                      toast({
-                        title: "Test Failed",
-                        description: result.message,
-                        variant: "destructive",
-                      });
-                    }
-                  } catch (error) {
-                    toast({
-                      title: "Error",
-                      description: "An error occurred while testing the connection.",
-                      variant: "destructive",
-                    });
-                  }
+                onClick={() => {
+                  setActiveModal(null);
+                  setTestStatus(null);
+                  setTestingStage(null);
                 }}
               >
-                Test Connection
+                Cancel
               </Button>
-              <Button type="submit">Connect</Button>
+              {renderTestConnectionButton('slack', {
+                workspace_id: slackForm.workspaceId,
+                client_id: slackForm.clientId,
+                client_secret: slackForm.clientSecret,
+                redirect_uri: slackForm.redirectUri,
+              })}
+              <Button 
+                type="submit" 
+                disabled={isTestingConnection}
+              >
+                {isTestingConnection ? (
+                  <div className="flex items-center">
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Connecting...
+                  </div>
+                ) : (
+                  "Connect"
+                )}
+              </Button>
             </div>
           </div>
         </form>
@@ -1843,7 +2197,11 @@ const ConnectionPage: React.FC = () => {
       {/* Slack Settings Modal */}
       <ConfigModal
         isOpen={activeModal === 'slack_settings'}
-        onClose={() => setActiveModal(null)}
+        onClose={() => {
+          setActiveModal(null);
+          setTestStatus(null);
+          setTestingStage(null);
+        }}
         title="Slack Settings"
       >
         <form onSubmit={(e) => {
@@ -1896,43 +2254,35 @@ const ConnectionPage: React.FC = () => {
                 required
               />
             </div>
+            
+            {/* Test Results Section */}
+            {testStatus && (
+              <ConnectionTestResults 
+                status={testStatus.status}
+                message={testStatus.message}
+                details={testStatus.details}
+                timestamp={testStatus.timestamp}
+              />
+            )}
+            
             <div className="flex justify-end space-x-2 pt-4">
-              <Button type="button" variant="outline" onClick={() => setActiveModal(null)}>Cancel</Button>
               <Button 
                 type="button" 
                 variant="outline" 
-                onClick={async () => {
-                  const config = {
-                    workspace_id: slackForm.workspaceId,
-                    client_id: slackForm.clientId,
-                    client_secret: slackForm.clientSecret,
-                    redirect_uri: slackForm.redirectUri,
-                  };
-                  try {
-                    const result = await ConnectionAPI.testConnection('slack', config);
-                    if (result.success) {
-                      toast({
-                        title: "Test Successful",
-                        description: result.message,
-                      });
-                    } else {
-                      toast({
-                        title: "Test Failed",
-                        description: result.message,
-                        variant: "destructive",
-                      });
-                    }
-                  } catch (error) {
-                    toast({
-                      title: "Error",
-                      description: "An error occurred while testing the connection.",
-                      variant: "destructive",
-                    });
-                  }
+                onClick={() => {
+                  setActiveModal(null);
+                  setTestStatus(null);
+                  setTestingStage(null);
                 }}
               >
-                Test Connection
+                Cancel
               </Button>
+              {renderTestConnectionButton('slack', {
+                workspace_id: slackForm.workspaceId,
+                client_id: slackForm.clientId,
+                client_secret: slackForm.clientSecret,
+                redirect_uri: slackForm.redirectUri,
+              })}
               <Button type="submit">Save Changes</Button>
             </div>
           </div>
@@ -1942,7 +2292,11 @@ const ConnectionPage: React.FC = () => {
       {/* Zoom Config Modal */}
       <ConfigModal
         isOpen={activeModal === 'zoom'}
-        onClose={() => setActiveModal(null)}
+        onClose={() => {
+          setActiveModal(null);
+          setTestStatus(null);
+          setTestingStage(null);
+        }}
         title="Zoom Configuration"
       >
         <form onSubmit={(e) => {
@@ -1986,44 +2340,48 @@ const ConnectionPage: React.FC = () => {
                 required
               />
             </div>
+            
+            {/* Test Results Section */}
+            {testStatus && (
+              <ConnectionTestResults 
+                status={testStatus.status}
+                message={testStatus.message}
+                details={testStatus.details}
+                timestamp={testStatus.timestamp}
+              />
+            )}
+            
             <div className="flex justify-end space-x-2 pt-4">
-              <Button type="button" variant="outline" onClick={() => setActiveModal(null)}>Cancel</Button>
               <Button 
                 type="button" 
                 variant="outline" 
-                onClick={async () => {
-                  const config = {
-                    account_id: zoomForm.accountId,
-                    client_id: zoomForm.clientId,
-                    client_secret: zoomForm.clientSecret,
-                    redirect_uri: zoomForm.redirectUri,
-                  };
-                  try {
-                    const result = await ConnectionAPI.testConnection('zoom', config);
-                    if (result.success) {
-                      toast({
-                        title: "Test Successful",
-                        description: result.message,
-                      });
-                    } else {
-                      toast({
-                        title: "Test Failed",
-                        description: result.message,
-                        variant: "destructive",
-                      });
-                    }
-                  } catch (error) {
-                    toast({
-                      title: "Error",
-                      description: "An error occurred while testing the connection.",
-                      variant: "destructive",
-                    });
-                  }
+                onClick={() => {
+                  setActiveModal(null);
+                  setTestStatus(null);
+                  setTestingStage(null);
                 }}
               >
-                Test Connection
+                Cancel
               </Button>
-              <Button type="submit">Connect</Button>
+              {renderTestConnectionButton('zoom', {
+                account_id: zoomForm.accountId,
+                client_id: zoomForm.clientId,
+                client_secret: zoomForm.clientSecret,
+                redirect_uri: zoomForm.redirectUri,
+              })}
+              <Button 
+                type="submit" 
+                disabled={isTestingConnection}
+              >
+                {isTestingConnection ? (
+                  <div className="flex items-center">
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Connecting...
+                  </div>
+                ) : (
+                  "Connect"
+                )}
+              </Button>
             </div>
           </div>
         </form>
@@ -2032,7 +2390,11 @@ const ConnectionPage: React.FC = () => {
       {/* Zoom Settings Modal */}
       <ConfigModal
         isOpen={activeModal === 'zoom_settings'}
-        onClose={() => setActiveModal(null)}
+        onClose={() => {
+          setActiveModal(null);
+          setTestStatus(null);
+          setTestingStage(null);
+        }}
         title="Zoom Settings"
       >
         <form onSubmit={(e) => {
@@ -2042,87 +2404,79 @@ const ConnectionPage: React.FC = () => {
           <div className="space-y-4">
             <div>
               <Label htmlFor="zoom-account-id-settings">Account ID</Label>
-              <Input 
-                id="zoom-account-id-settings" 
+              <Input
+                id="zoom-account-id-settings"
                 value={zoomForm.accountId}
-                onChange={(e) => setZoomForm({...zoomForm, accountId: e.target.value})}
+                onChange={(e) => setZoomForm({ ...zoomForm, accountId: e.target.value })}
                 required
               />
             </div>
             <div>
               <Label htmlFor="zoom-client-id-settings">Client ID</Label>
-              <Input 
-                id="zoom-client-id-settings" 
+              <Input
+                id="zoom-client-id-settings"
                 value={zoomForm.clientId}
-                onChange={(e) => setZoomForm({...zoomForm, clientId: e.target.value})}
+                onChange={(e) => setZoomForm({ ...zoomForm, clientId: e.target.value })}
                 required
               />
             </div>
             <div>
               <Label htmlFor="zoom-client-secret-settings">Client Secret</Label>
               <PasswordInput
-                id="zoom-client-secret-settings" 
+                id="zoom-client-secret-settings"
                 value={zoomForm.clientSecret}
-                onChange={(e) => setZoomForm({...zoomForm, clientSecret: e.target.value})}
+                onChange={(e) => setZoomForm({ ...zoomForm, clientSecret: e.target.value })}
                 required
               />
             </div>
             <div>
               <Label htmlFor="zoom-redirect-uri-settings">Redirect URI</Label>
-              <Input 
-                id="zoom-redirect-uri-settings" 
+              <Input
+                id="zoom-redirect-uri-settings"
                 value={zoomForm.redirectUri}
-                onChange={(e) => setZoomForm({...zoomForm, redirectUri: e.target.value})}
+                onChange={(e) => setZoomForm({ ...zoomForm, redirectUri: e.target.value })}
                 required
               />
             </div>
+            {/* Test Results Section */}
+            {testStatus && (
+              <ConnectionTestResults 
+                status={testStatus.status}
+                message={testStatus.message}
+                details={testStatus.details}
+                timestamp={testStatus.timestamp}
+              />
+            )}
             <div className="flex justify-end space-x-2 pt-4">
-              <Button type="button" variant="outline" onClick={() => setActiveModal(null)}>Cancel</Button>
               <Button 
-                type="button" 
-                variant="outline" 
-                onClick={async () => {
-                  const config = {
-                    account_id: zoomForm.accountId,
-                    client_id: zoomForm.clientId,
-                    client_secret: zoomForm.clientSecret,
-                    redirect_uri: zoomForm.redirectUri,
-                  };
-                  try {
-                    const result = await ConnectionAPI.testConnection('zoom', config);
-                    if (result.success) {
-                      toast({
-                        title: "Test Successful",
-                        description: result.message,
-                      });
-                    } else {
-                      toast({
-                        title: "Test Failed",
-                        description: result.message,
-                        variant: "destructive",
-                      });
-                    }
-                  } catch (error) {
-                    toast({
-                      title: "Error",
-                      description: "An error occurred while testing the connection.",
-                      variant: "destructive",
-                    });
-                  }
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setActiveModal(null);
+                  setTestStatus(null);
+                  setTestingStage(null);
                 }}
               >
-                Test Connection
+                Cancel
               </Button>
+              {renderTestConnectionButton('zoom', {
+                account_id: zoomForm.accountId,
+                client_id: zoomForm.clientId,
+                client_secret: zoomForm.clientSecret,
+                redirect_uri: zoomForm.redirectUri,
+              })}
               <Button type="submit">Save Changes</Button>
             </div>
           </div>
         </form>
       </ConfigModal>
-
-      {/* Jira Config Modal */}
       <ConfigModal
         isOpen={activeModal === 'jira'}
-        onClose={() => setActiveModal(null)}
+        onClose={() => {
+          setActiveModal(null);
+          setTestStatus(null);
+          setTestingStage(null);
+        }}
         title="Jira Configuration"
       >
         <form onSubmit={(e) => {
@@ -2168,44 +2522,48 @@ const ConnectionPage: React.FC = () => {
               />
               <p className="text-xs text-gray-500 mt-1">This URI needs to be registered in your Atlassian app.</p>
             </div>
+            
+            {/* Test Results Section */}
+            {testStatus && (
+              <ConnectionTestResults 
+                status={testStatus.status}
+                message={testStatus.message}
+                details={testStatus.details}
+                timestamp={testStatus.timestamp}
+              />
+            )}
+            
             <div className="flex justify-end space-x-2 pt-4">
-              <Button type="button" variant="outline" onClick={() => setActiveModal(null)}>Cancel</Button>
               <Button 
                 type="button" 
                 variant="outline" 
-                onClick={async () => {
-                  const config = {
-                    instance_url: jiraForm.instanceUrl,
-                    client_id: jiraForm.clientId,
-                    client_secret: jiraForm.clientSecret,
-                    redirect_uri: jiraForm.redirectUri,
-                  };
-                  try {
-                    const result = await ConnectionAPI.testConnection('jira', config);
-                    if (result.success) {
-                      toast({
-                        title: "Test Successful",
-                        description: result.message,
-                      });
-                    } else {
-                      toast({
-                        title: "Test Failed",
-                        description: result.message,
-                        variant: "destructive",
-                      });
-                    }
-                  } catch (error) {
-                    toast({
-                      title: "Error",
-                      description: "An error occurred while testing the connection.",
-                      variant: "destructive",
-                    });
-                  }
+                onClick={() => {
+                  setActiveModal(null);
+                  setTestStatus(null);
+                  setTestingStage(null);
                 }}
               >
-                Test Connection
+                Cancel
               </Button>
-              <Button type="submit">Connect</Button>
+              {renderTestConnectionButton('jira', {
+                instance_url: jiraForm.instanceUrl,
+                client_id: jiraForm.clientId,
+                client_secret: jiraForm.clientSecret,
+                redirect_uri: jiraForm.redirectUri,
+              })}
+              <Button 
+                type="submit" 
+                disabled={isTestingConnection}
+              >
+                {isTestingConnection ? (
+                  <div className="flex items-center">
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Connecting...
+                  </div>
+                ) : (
+                  "Connect"
+                )}
+              </Button>
             </div>
           </div>
         </form>
@@ -2214,7 +2572,11 @@ const ConnectionPage: React.FC = () => {
       {/* Jira Settings Modal */}
       <ConfigModal
         isOpen={activeModal === 'jira_settings'}
-        onClose={() => setActiveModal(null)}
+        onClose={() => {
+          setActiveModal(null);
+          setTestStatus(null);
+          setTestingStage(null);
+        }}
         title="Jira Settings"
       >
         <form onSubmit={(e) => {
@@ -2258,43 +2620,35 @@ const ConnectionPage: React.FC = () => {
                 required
               />
             </div>
+            
+            {/* Test Results Section */}
+            {testStatus && (
+              <ConnectionTestResults 
+                status={testStatus.status}
+                message={testStatus.message}
+                details={testStatus.details}
+                timestamp={testStatus.timestamp}
+              />
+            )}
+            
             <div className="flex justify-end space-x-2 pt-4">
-              <Button type="button" variant="outline" onClick={() => setActiveModal(null)}>Cancel</Button>
               <Button 
                 type="button" 
                 variant="outline" 
-                onClick={async () => {
-                  const config = {
-                    instance_url: jiraForm.instanceUrl,
-                    client_id: jiraForm.clientId,
-                    client_secret: jiraForm.clientSecret,
-                    redirect_uri: jiraForm.redirectUri,
-                  };
-                  try {
-                    const result = await ConnectionAPI.testConnection('jira', config);
-                    if (result.success) {
-                      toast({
-                        title: "Test Successful",
-                        description: result.message,
-                      });
-                    } else {
-                      toast({
-                        title: "Test Failed",
-                        description: result.message,
-                        variant: "destructive",
-                      });
-                    }
-                  } catch (error) {
-                    toast({
-                      title: "Error",
-                      description: "An error occurred while testing the connection.",
-                      variant: "destructive",
-                    });
-                  }
+                onClick={() => {
+                  setActiveModal(null);
+                  setTestStatus(null);
+                  setTestingStage(null);
                 }}
               >
-                Test Connection
+                Cancel
               </Button>
+              {renderTestConnectionButton('jira', {
+                instance_url: jiraForm.instanceUrl,
+                client_id: jiraForm.clientId,
+                client_secret: jiraForm.clientSecret,
+                redirect_uri: jiraForm.redirectUri,
+              })}
               <Button type="submit">Save Changes</Button>
             </div>
           </div>
@@ -2304,7 +2658,11 @@ const ConnectionPage: React.FC = () => {
       {/* Custom API Config Modal */}
       <ConfigModal
         isOpen={activeModal === 'customAPI'}
-        onClose={() => setActiveModal(null)}
+        onClose={() => {
+          setActiveModal(null);
+          setTestStatus(null);
+          setTestingStage(null);
+        }}
         title={`${editingApiId ? customAPIs.find(api => api.id === editingApiId)?.name || 'Custom API' : 'Custom API'} Configuration`}
       >
         <form onSubmit={(e) => {
@@ -2357,44 +2715,48 @@ const ConnectionPage: React.FC = () => {
                 required
               />
             </div>
+            
+            {/* Test Results Section */}
+            {testStatus && (
+              <ConnectionTestResults 
+                status={testStatus.status}
+                message={testStatus.message}
+                details={testStatus.details}
+                timestamp={testStatus.timestamp}
+              />
+            )}
+            
             <div className="flex justify-end space-x-2 pt-4">
-              <Button type="button" variant="outline" onClick={() => setActiveModal(null)}>Cancel</Button>
               <Button 
                 type="button" 
                 variant="outline" 
-                onClick={async () => {
-                  const config = {
-                    api_url: customAPIForm.apiUrl,
-                    api_key: customAPIForm.apiKey,
-                    auth_type: customAPIForm.authType,
-                    headers: customAPIForm.headers,
-                  };
-                  try {
-                    const result = await ConnectionAPI.testConnection('customapi', config);
-                    if (result.success) {
-                      toast({
-                        title: "Test Successful",
-                        description: result.message,
-                      });
-                    } else {
-                      toast({
-                        title: "Test Failed",
-                        description: result.message,
-                        variant: "destructive",
-                      });
-                    }
-                  } catch (error) {
-                    toast({
-                      title: "Error",
-                      description: "An error occurred while testing the connection.",
-                      variant: "destructive",
-                    });
-                  }
+                onClick={() => {
+                  setActiveModal(null);
+                  setTestStatus(null);
+                  setTestingStage(null);
                 }}
               >
-                Test Connection
+                Cancel
               </Button>
-              <Button type="submit">Connect</Button>
+              {renderTestConnectionButton('customapi', {
+                api_url: customAPIForm.apiUrl,
+                api_key: customAPIForm.apiKey,
+                auth_type: customAPIForm.authType,
+                headers: customAPIForm.headers,
+              })}
+              <Button 
+                type="submit" 
+                disabled={isTestingConnection}
+              >
+                {isTestingConnection ? (
+                  <div className="flex items-center">
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Connecting...
+                  </div>
+                ) : (
+                  "Connect"
+                )}
+              </Button>
             </div>
           </div>
         </form>
@@ -2403,7 +2765,11 @@ const ConnectionPage: React.FC = () => {
       {/* Custom API Settings Modal */}
       <ConfigModal
         isOpen={activeModal === 'customAPI_settings'}
-        onClose={() => setActiveModal(null)}
+        onClose={() => {
+          setActiveModal(null);
+          setTestStatus(null);
+          setTestingStage(null);
+        }}
         title={`${editingApiId ? customAPIs.find(api => api.id === editingApiId)?.name || 'Custom API' : 'Custom API'} Settings`}
       >
         <form onSubmit={(e) => {
@@ -2454,43 +2820,35 @@ const ConnectionPage: React.FC = () => {
                 required
               />
             </div>
+            
+            {/* Test Results Section */}
+            {testStatus && (
+              <ConnectionTestResults 
+                status={testStatus.status}
+                message={testStatus.message}
+                details={testStatus.details}
+                timestamp={testStatus.timestamp}
+              />
+            )}
+            
             <div className="flex justify-end space-x-2 pt-4">
-              <Button type="button" variant="outline" onClick={() => setActiveModal(null)}>Cancel</Button>
               <Button 
                 type="button" 
                 variant="outline" 
-                onClick={async () => {
-                  const config = {
-                    api_url: customAPIForm.apiUrl,
-                    api_key: customAPIForm.apiKey,
-                    auth_type: customAPIForm.authType,
-                    headers: customAPIForm.headers,
-                  };
-                  try {
-                    const result = await ConnectionAPI.testConnection('customapi', config);
-                    if (result.success) {
-                      toast({
-                        title: "Test Successful",
-                        description: result.message,
-                      });
-                    } else {
-                      toast({
-                        title: "Test Failed",
-                        description: result.message,
-                        variant: "destructive",
-                      });
-                    }
-                  } catch (error) {
-                    toast({
-                      title: "Error",
-                      description: "An error occurred while testing the connection.",
-                      variant: "destructive",
-                    });
-                  }
+                onClick={() => {
+                  setActiveModal(null);
+                  setTestStatus(null);
+                  setTestingStage(null);
                 }}
               >
-                Test Connection
+                Cancel
               </Button>
+              {renderTestConnectionButton('customapi', {
+                api_url: customAPIForm.apiUrl,
+                api_key: customAPIForm.apiKey,
+                auth_type: customAPIForm.authType,
+                headers: customAPIForm.headers,
+              })}
               <Button type="submit">Save Changes</Button>
             </div>
           </div>

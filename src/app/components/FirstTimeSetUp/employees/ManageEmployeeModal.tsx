@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { X } from 'lucide-react';
+import { X, ChevronDown, ChevronUp, Download, Upload, AlertTriangle, Check, MoreHorizontal, Filter } from 'lucide-react';
 import { Employee } from '../../../lib/types';
 import { employeeService } from '../../../lib/services/employeeService';
 import EmployeeDetailModal from './employeeDetailModal';
@@ -13,12 +13,16 @@ interface ManageEmployeesModalProps {
     onEmployeeStatusChange: () => void;
 }
 
+type SortField = 'name' | 'email' | 'department' | 'position' | 'location' | 'status';
+type SortDirection = 'asc' | 'desc';
+
 const ManageEmployeesModal: React.FC<ManageEmployeesModalProps> = ({ 
     isOpen, 
     onClose,
     onEmployeeStatusChange
 }) => {
     const modalRef = useRef<HTMLDivElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
     const [employees, setEmployees] = useState<Employee[]>([]);
     const [filteredEmployees, setFilteredEmployees] = useState<Employee[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -28,14 +32,27 @@ const ManageEmployeesModal: React.FC<ManageEmployeesModalProps> = ({
     const [isEmployeeDetailOpen, setIsEmployeeDetailOpen] = useState(false);
     const [isAddEmployeeModalOpen, setIsAddEmployeeModalOpen] = useState(false);
     const [selectedRows, setSelectedRows] = useState<number[]>([]);
+    const [showBulkActionMenu, setShowBulkActionMenu] = useState(false);
+    const [showConfirmDialog, setShowConfirmDialog] = useState<{show: boolean, action: string, message: string}>({
+        show: false,
+        action: '',
+        message: ''
+    });
+    const [actionInProgress, setActionInProgress] = useState(false);
+    const [successMessage, setSuccessMessage] = useState('');
     
     // Filters
     const [departmentFilter, setDepartmentFilter] = useState<string>('All Departments');
     const [locationFilter, setLocationFilter] = useState<string>('All Locations');
     const [statusFilter, setStatusFilter] = useState<string>('All Status');
     
+    // Sorting
+    const [sortField, setSortField] = useState<SortField>('name');
+    const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+    
     const employeesPerPage = 6;
     const totalPages = Math.ceil(filteredEmployees.length / employeesPerPage);
+    const bulkActionMenuRef = useRef<HTMLDivElement>(null);
 
     // Load employees when modal opens
     useEffect(() => {
@@ -57,7 +74,22 @@ const ManageEmployeesModal: React.FC<ManageEmployeesModalProps> = ({
         loadEmployees();
     }, [isOpen]);
 
-    // Filter employees whenever filters change
+    // Handle clicking outside the bulk action menu
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (bulkActionMenuRef.current && !bulkActionMenuRef.current.contains(event.target as Node)) {
+                setShowBulkActionMenu(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
+
+    // Apply filtering and sorting
     useEffect(() => {
         if (employees.length === 0) return;
         
@@ -89,17 +121,29 @@ const ManageEmployeesModal: React.FC<ManageEmployeesModalProps> = ({
             );
         }
         
+        // Apply sorting
+        result.sort((a, b) => {
+            const fieldA = a[sortField] || '';
+            const fieldB = b[sortField] || '';
+            
+            if (sortDirection === 'asc') {
+                return fieldA.localeCompare(fieldB);
+            } else {
+                return fieldB.localeCompare(fieldA);
+            }
+        });
+        
         setFilteredEmployees(result);
         // Reset to first page when filters change
         setCurrentPage(1);
-    }, [employees, departmentFilter, locationFilter, statusFilter, searchTerm]);
+    }, [employees, departmentFilter, locationFilter, statusFilter, searchTerm, sortField, sortDirection]);
 
-    // Handle clicking outside the modal to close it - FIXED
+    // Handle clicking outside the modal to close it
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             // Ensure we're not closing when interaction is inside the modal
             // or if other modals are open
-            if (isEmployeeDetailOpen || isAddEmployeeModalOpen) {
+            if (isEmployeeDetailOpen || isAddEmployeeModalOpen || showConfirmDialog.show) {
                 return;
             }
             
@@ -119,13 +163,13 @@ const ManageEmployeesModal: React.FC<ManageEmployeesModalProps> = ({
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
-    }, [isOpen, onClose, isEmployeeDetailOpen, isAddEmployeeModalOpen]);
+    }, [isOpen, onClose, isEmployeeDetailOpen, isAddEmployeeModalOpen, showConfirmDialog]);
 
     // Handle ESC key to close modal
     useEffect(() => {
         const handleEsc = (event: KeyboardEvent) => {
             // Don't close the parent modal if a child modal is open
-            if (isEmployeeDetailOpen || isAddEmployeeModalOpen) {
+            if (isEmployeeDetailOpen || isAddEmployeeModalOpen || showConfirmDialog.show) {
                 return;
             }
             
@@ -141,7 +185,18 @@ const ManageEmployeesModal: React.FC<ManageEmployeesModalProps> = ({
         return () => {
             document.removeEventListener('keydown', handleEsc);
         };
-    }, [isOpen, onClose, isEmployeeDetailOpen, isAddEmployeeModalOpen]);
+    }, [isOpen, onClose, isEmployeeDetailOpen, isAddEmployeeModalOpen, showConfirmDialog]);
+
+    // Success message timeout
+    useEffect(() => {
+        if (successMessage) {
+            const timer = setTimeout(() => {
+                setSuccessMessage('');
+            }, 3000);
+            
+            return () => clearTimeout(timer);
+        }
+    }, [successMessage]);
 
     const handleStatusChange = async (employeeId: number) => {
         await employeeService.toggleEmployeeStatus(employeeId);
@@ -173,12 +228,23 @@ const ManageEmployeesModal: React.FC<ManageEmployeesModalProps> = ({
         }
     };
 
+    const handleSort = (field: SortField) => {
+        if (sortField === field) {
+            // Toggle direction
+            setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortField(field);
+            setSortDirection('asc');
+        }
+    };
+
     const handleEmployeeAdded = async () => {
         // Refresh employees after adding a new one
         const updatedEmployees = await employeeService.getEmployees();
         setEmployees(updatedEmployees);
         onEmployeeStatusChange();
         setIsAddEmployeeModalOpen(false);
+        setSuccessMessage('Employee added successfully');
     };
 
     const handlePreviousPage = () => {
@@ -208,6 +274,154 @@ const ManageEmployeesModal: React.FC<ManageEmployeesModalProps> = ({
         onEmployeeStatusChange();
     };
 
+    // Handle bulk actions
+    const handleBulkInclude = async () => {
+        setShowBulkActionMenu(false);
+        setShowConfirmDialog({
+            show: true,
+            action: 'include',
+            message: `Are you sure you want to include ${selectedRows.length} employees in the analysis?`
+        });
+    };
+
+    const handleBulkExclude = async () => {
+        setShowBulkActionMenu(false);
+        setShowConfirmDialog({
+            show: true,
+            action: 'exclude',
+            message: `Are you sure you want to exclude ${selectedRows.length} employees from the analysis?`
+        });
+    };
+
+    const handleBulkDelete = async () => {
+        setShowBulkActionMenu(false);
+        setShowConfirmDialog({
+            show: true,
+            action: 'delete',
+            message: `Are you sure you want to delete ${selectedRows.length} employees? This action cannot be undone.`
+        });
+    };
+
+    const executeConfirmedAction = async () => {
+        setActionInProgress(true);
+        
+        try {
+            const action = showConfirmDialog.action;
+            
+            if (action === 'include') {
+                await Promise.all(selectedRows.map(id => 
+                    employeeService.updateEmployeeStatus(id, 'Included')
+                ));
+                setSuccessMessage(`${selectedRows.length} employees included successfully`);
+            } else if (action === 'exclude') {
+                await Promise.all(selectedRows.map(id => 
+                    employeeService.updateEmployeeStatus(id, 'Excluded')
+                ));
+                setSuccessMessage(`${selectedRows.length} employees excluded successfully`);
+            } else if (action === 'delete') {
+                await Promise.all(selectedRows.map(id => 
+                    employeeService.deleteEmployee(id)
+                ));
+                setSuccessMessage(`${selectedRows.length} employees deleted successfully`);
+            }
+            
+            // Refresh employee data
+            const updatedEmployees = await employeeService.getEmployees();
+            setEmployees(updatedEmployees);
+            onEmployeeStatusChange();
+            
+            // Clear selected rows
+            setSelectedRows([]);
+        } catch (error) {
+            console.error(`Error performing bulk ${showConfirmDialog.action}:`, error);
+        } finally {
+            setActionInProgress(false);
+            setShowConfirmDialog({ show: false, action: '', message: '' });
+        }
+    };
+
+    const cancelConfirmedAction = () => {
+        setShowConfirmDialog({ show: false, action: '', message: '' });
+    };
+
+    // Export employee data
+    const handleExportEmployees = () => {
+        setShowBulkActionMenu(false);
+        
+        // Create CSV content
+        const headers = ['Name', 'Email', 'Department', 'Position', 'Location', 'Status'];
+        
+        let csvContent = headers.join(',') + '\n';
+        
+        // If employees are selected, export only those, otherwise export all filtered employees
+        const employeesToExport = selectedRows.length > 0
+            ? employees.filter(emp => selectedRows.includes(emp.id))
+            : filteredEmployees;
+            
+        employeesToExport.forEach(emp => {
+            const row = [
+                `"${emp.name}"`,
+                `"${emp.email}"`,
+                `"${emp.department}"`,
+                `"${emp.position}"`,
+                `"${emp.location || ''}"`,
+                `"${emp.status}"`
+            ];
+            csvContent += row.join(',') + '\n';
+        });
+        
+        // Create download link
+        const encodedUri = encodeURI('data:text/csv;charset=utf-8,' + csvContent);
+        const link = document.createElement('a');
+        link.setAttribute('href', encodedUri);
+        link.setAttribute('download', 'employee_data.csv');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        setSuccessMessage(`${employeesToExport.length} employees exported successfully`);
+    };
+
+    // Import employee data
+    const handleImportClick = () => {
+        setShowBulkActionMenu(false);
+        // Trigger file input click
+        if (fileInputRef.current) {
+            fileInputRef.current.click();
+        }
+    };
+
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        
+        try {
+            // This is a placeholder for your file upload implementation
+            // In a real implementation, you would:
+            // 1. Read the file (CSV or Excel)
+            // 2. Parse it
+            // 3. Send the data to your backend or directly update the employee state
+            
+            // Simulating a successful import
+            setTimeout(async () => {
+                // Refresh employee data
+                const updatedEmployees = await employeeService.getEmployees();
+                setEmployees(updatedEmployees);
+                onEmployeeStatusChange();
+                
+                setSuccessMessage('Employees imported successfully');
+                
+                // Reset file input
+                if (fileInputRef.current) {
+                    fileInputRef.current.value = '';
+                }
+            }, 1000);
+        } catch (error) {
+            console.error('Error importing employees:', error);
+            // Handle error (show error message, etc.)
+        }
+    };
+
     // Get employees for current page
     const getCurrentPageEmployees = () => {
         const startIndex = (currentPage - 1) * employeesPerPage;
@@ -232,6 +446,25 @@ const ManageEmployeesModal: React.FC<ManageEmployeesModalProps> = ({
         return Array.from(locations).sort();
     };
 
+    // Clear all filters
+    const clearAllFilters = () => {
+        setSearchTerm('');
+        setDepartmentFilter('All Departments');
+        setLocationFilter('All Locations');
+        setStatusFilter('All Status');
+    };
+
+    // Get sorted icon for table header
+    const getSortIcon = (field: SortField) => {
+        if (sortField !== field) {
+            return null;
+        }
+        
+        return sortDirection === 'asc' 
+            ? <ChevronUp className="w-4 h-4 inline ml-1" /> 
+            : <ChevronDown className="w-4 h-4 inline ml-1" />;
+    };
+
     if (!isOpen) return null;
 
     return (
@@ -253,6 +486,20 @@ const ManageEmployeesModal: React.FC<ManageEmployeesModalProps> = ({
                         </button>
                     </div>
                     
+                    {/* Success Message */}
+                    {successMessage && (
+                        <div className="p-4 bg-green-50 border-l-4 border-green-400 m-4 rounded">
+                            <div className="flex">
+                                <div className="flex-shrink-0">
+                                    <Check className="h-5 w-5 text-green-400" />
+                                </div>
+                                <div className="ml-3">
+                                    <p className="text-sm text-green-700">{successMessage}</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    
                     <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex flex-wrap justify-between items-center gap-2">
                         {/* Search */}
                         <div className="relative flex-grow max-w-md">
@@ -269,6 +516,40 @@ const ManageEmployeesModal: React.FC<ManageEmployeesModalProps> = ({
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
                         </div>
+                        
+                        {/* Active filters display */}
+                        {(departmentFilter !== 'All Departments' || locationFilter !== 'All Locations' || statusFilter !== 'All Status' || searchTerm) && (
+                            <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                                <Filter className="w-4 h-4 mr-1" />
+                                <span>Active filters:</span>
+                                {departmentFilter !== 'All Departments' && (
+                                    <span className="ml-1 bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-xs dark:bg-blue-900 dark:text-blue-100">
+                                        Dept: {departmentFilter}
+                                    </span>
+                                )}
+                                {locationFilter !== 'All Locations' && (
+                                    <span className="ml-1 bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-xs dark:bg-blue-900 dark:text-blue-100">
+                                        Location: {locationFilter}
+                                    </span>
+                                )}
+                                {statusFilter !== 'All Status' && (
+                                    <span className="ml-1 bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-xs dark:bg-blue-900 dark:text-blue-100">
+                                        Status: {statusFilter}
+                                    </span>
+                                )}
+                                {searchTerm && (
+                                    <span className="ml-1 bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-xs dark:bg-blue-900 dark:text-blue-100">
+                                        Search: "{searchTerm}"
+                                    </span>
+                                )}
+                                <button 
+                                    className="ml-2 text-blue-600 hover:text-blue-800 text-xs dark:text-blue-400 dark:hover:text-blue-300"
+                                    onClick={clearAllFilters}
+                                >
+                                    Clear all
+                                </button>
+                            </div>
+                        )}
                         
                         {/* Filters */}
                         <div className="flex flex-wrap gap-2">
@@ -316,6 +597,62 @@ const ManageEmployeesModal: React.FC<ManageEmployeesModalProps> = ({
                         </div>
                     </div>
                     
+                    {/* Bulk actions menu */}
+                    {selectedRows.length > 0 && (
+                        <div className="p-2 border-b border-gray-200 dark:border-gray-700 bg-blue-50 dark:bg-blue-900 flex justify-between items-center">
+                            <div className="text-blue-700 dark:text-blue-100 text-sm">
+                                <span className="font-semibold">{selectedRows.length}</span> {selectedRows.length === 1 ? 'employee' : 'employees'} selected
+                            </div>
+                            <div className="relative">
+                                <button
+                                    onClick={() => setShowBulkActionMenu(!showBulkActionMenu)}
+                                    className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700"
+                                >
+                                    Bulk Actions
+                                    <ChevronDown className="w-4 h-4 ml-1" />
+                                </button>
+                                
+                                {showBulkActionMenu && (
+                                    <div 
+                                        ref={bulkActionMenuRef}
+                                        className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 border border-gray-200 dark:border-gray-700"
+                                    >
+                                        <div className="py-1">
+                                            <button
+                                                onClick={handleBulkInclude}
+                                                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center text-green-600 dark:text-green-400"
+                                            >
+                                                <Check className="w-4 h-4 mr-2" />
+                                                Include Selected
+                                            </button>
+                                            <button
+                                                onClick={handleBulkExclude}
+                                                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center text-orange-600 dark:text-orange-400"
+                                            >
+                                                <X className="w-4 h-4 mr-2" />
+                                                Exclude Selected
+                                            </button>
+                                            <button
+                                                onClick={handleExportEmployees}
+                                                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center text-blue-600 dark:text-blue-400"
+                                            >
+                                                <Download className="w-4 h-4 mr-2" />
+                                                Export Selected
+                                            </button>
+                                            <button
+                                                onClick={handleBulkDelete}
+                                                className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center text-red-600 dark:text-red-400"
+                                            >
+                                                <AlertTriangle className="w-4 h-4 mr-2" />
+                                                Delete Selected
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                    
                     <div className="overflow-x-auto flex-grow overflow-y-auto">
                         <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
                             <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400 sticky top-0">
@@ -332,23 +669,85 @@ const ManageEmployeesModal: React.FC<ManageEmployeesModalProps> = ({
                                             <label htmlFor="checkbox-all" className="sr-only">checkbox</label>
                                         </div>
                                     </th>
-                                    <th scope="col" className="px-6 py-3">NAME</th>
-                                    <th scope="col" className="px-6 py-3">EMAIL</th>
-                                    <th scope="col" className="px-6 py-3">DEPARTMENT</th>
-                                    <th scope="col" className="px-6 py-3">POSITION</th>
-                                    <th scope="col" className="px-6 py-3">LOCATION</th>
-                                    <th scope="col" className="px-6 py-3">STATUS</th>
-                                    <th scope="col" className="px-6 py-3">ACTIONS</th>
+                                    <th 
+                                        scope="col" 
+                                        className="px-6 py-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
+                                        onClick={() => handleSort('name')}
+                                    >
+                                        NAME {getSortIcon('name')}
+                                    </th>
+                                    <th 
+                                        scope="col" 
+                                        className="px-6 py-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
+                                        onClick={() => handleSort('email')}
+                                    >
+                                        EMAIL {getSortIcon('email')}
+                                    </th>
+                                    <th 
+                                        scope="col" 
+                                        className="px-6 py-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
+                                        onClick={() => handleSort('department')}
+                                    >
+                                        DEPARTMENT {getSortIcon('department')}
+                                    </th>
+                                    <th 
+                                        scope="col" 
+                                        className="px-6 py-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
+                                        onClick={() => handleSort('position')}
+                                    >
+                                        POSITION {getSortIcon('position')}
+                                    </th>
+                                    <th 
+                                        scope="col" 
+                                        className="px-6 py-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
+                                        onClick={() => handleSort('location')}
+                                    >
+                                        LOCATION {getSortIcon('location')}
+                                    </th>
+                                    <th 
+                                        scope="col" 
+                                        className="px-6 py-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
+                                        onClick={() => handleSort('status')}
+                                    >
+                                        STATUS {getSortIcon('status')}
+                                    </th>
+                                    <th scope="col" className="px-6 py-3">
+                                        ACTIONS
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {isLoading ? (
                                     <tr>
-                                        <td colSpan={8} className="text-center py-4">Loading employees...</td>
+                                        <td colSpan={8} className="text-center py-4">
+                                            <div className="flex justify-center items-center">
+                                                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                </svg>
+                                                Loading employees...
+                                            </div>
+                                        </td>
                                     </tr>
                                 ) : getCurrentPageEmployees().length === 0 ? (
                                     <tr>
-                                        <td colSpan={8} className="text-center py-4">No employees found.</td>
+                                        <td colSpan={8} className="text-center py-8 text-gray-500 dark:text-gray-400">
+                                            <div className="flex flex-col items-center">
+                                                <svg className="w-12 h-12 mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                                </svg>
+                                                <p className="text-lg font-semibold mb-1">No employees found</p>
+                                                <p className="text-sm">Try adjusting your search or filter criteria</p>
+                                                {(departmentFilter !== 'All Departments' || locationFilter !== 'All Locations' || statusFilter !== 'All Status' || searchTerm) && (
+                                                    <button 
+                                                        onClick={clearAllFilters}
+                                                        className="mt-3 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700"
+                                                    >
+                                                        Clear all filters
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </td>
                                     </tr>
                                 ) : (
                                     getCurrentPageEmployees().map((employee) => (
@@ -394,13 +793,15 @@ const ManageEmployeesModal: React.FC<ManageEmployeesModalProps> = ({
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <button 
-                                                    type="button" 
-                                                    onClick={() => handleViewDetails(employee)}
-                                                    className="text-blue-600 hover:underline font-medium dark:text-blue-500"
-                                                >
-                                                    View Details
-                                                </button>
+                                                <div className="relative inline-block text-left">
+                                                    <button 
+                                                        type="button" 
+                                                        className="text-blue-600 hover:underline font-medium dark:text-blue-500"
+                                                        onClick={() => handleViewDetails(employee)}
+                                                    >
+                                                        View Details
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))
@@ -414,80 +815,137 @@ const ManageEmployeesModal: React.FC<ManageEmployeesModalProps> = ({
                             Showing {filteredEmployees.length > 0 ? ((currentPage - 1) * employeesPerPage) + 1 : 0} to {Math.min(currentPage * employeesPerPage, filteredEmployees.length)} of {filteredEmployees.length} results
                         </div>
                         
-                        <div className="inline-flex">
-                            <button 
-                                onClick={handlePreviousPage}
-                                disabled={currentPage === 1}
-                                className={`px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-l-lg hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 ${currentPage === 1 ? 'cursor-not-allowed opacity-50' : ''}`}
-                            >
-                                Previous
-                            </button>
-                            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                                // Show pages around current page
-                                let pageToShow;
-                                if (totalPages <= 5) {
-                                    pageToShow = i + 1;
-                                } else if (currentPage <= 3) {
-                                    pageToShow = i + 1;
-                                } else if (currentPage >= totalPages - 2) {
-                                    pageToShow = totalPages - 4 + i;
-                                } else {
-                                    pageToShow = currentPage - 2 + i;
-                                }
-                                
-                                return (
-                                    <button
-                                        key={pageToShow}
-                                        onClick={() => setCurrentPage(pageToShow)}
-                                        className={`px-4 py-2 text-sm font-medium border border-gray-300 dark:border-gray-700 ${
-                                            currentPage === pageToShow
-                                                ? 'text-blue-600 bg-blue-50 dark:bg-gray-700 dark:text-white'
-                                                : 'text-gray-700 bg-white hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'
-                                        }`}
-                                    >
-                                        {pageToShow}
-                                    </button>
-                                );
-                            })}
-                            {totalPages > 5 && currentPage < totalPages - 2 && (
-                                <>
-                                    <button className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400">
-                                        ...
-                                    </button>
-                                    <button
-                                        onClick={() => setCurrentPage(totalPages)}
-                                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700"
-                                    >
-                                        {totalPages}
-                                    </button>
-                                </>
-                            )}
+                        {filteredEmployees.length > 0 && (
+                            <div className="inline-flex mt-2 md:mt-0">
+                                <button 
+                                    onClick={handlePreviousPage}
+                                    disabled={currentPage === 1}
+                                    className={`px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-l-lg hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 ${currentPage === 1 ? 'cursor-not-allowed opacity-50' : ''}`}
+                                >
+                                    Previous
+                                </button>
+                                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                                    // Show pages around current page
+                                    let pageToShow;
+                                    if (totalPages <= 5) {
+                                        pageToShow = i + 1;
+                                    } else if (currentPage <= 3) {
+                                        pageToShow = i + 1;
+                                    } else if (currentPage >= totalPages - 2) {
+                                        pageToShow = totalPages - 4 + i;
+                                    } else {
+                                        pageToShow = currentPage - 2 + i;
+                                    }
+                                    
+                                    return (
+                                        <button
+                                            key={pageToShow}
+                                            onClick={() => setCurrentPage(pageToShow)}
+                                            className={`px-4 py-2 text-sm font-medium border border-gray-300 dark:border-gray-700 ${
+                                                currentPage === pageToShow
+                                                    ? 'text-blue-600 bg-blue-50 dark:bg-gray-700 dark:text-white'
+                                                    : 'text-gray-700 bg-white hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'
+                                            }`}
+                                        >
+                                            {pageToShow}
+                                        </button>
+                                    );
+                                })}
+                                {totalPages > 5 && currentPage < totalPages - 2 && (
+                                    <>
+                                        <button className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400">
+                                            ...
+                                        </button>
+                                        <button
+                                            onClick={() => setCurrentPage(totalPages)}
+                                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700"
+                                        >
+                                            {totalPages}
+                                        </button>
+                                    </>
+                                )}
+                                <button
+                                    onClick={handleNextPage}
+                                    disabled={currentPage === totalPages}
+                                    className={`px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-r-lg hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 ${currentPage === totalPages ? 'cursor-not-allowed opacity-50' : ''}`}
+                                >
+                                    Next
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                    
+                    <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-between gap-2">
+                        <div>
+                            <input
+                                type="file"
+                                ref={fileInputRef}
+                                className="hidden"
+                                accept=".csv,.xlsx,.xls"
+                                onChange={handleFileUpload}
+                            />
                             <button
-                                onClick={handleNextPage}
-                                disabled={currentPage === totalPages}
-                                className={`px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-r-lg hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 ${currentPage === totalPages ? 'cursor-not-allowed opacity-50' : ''}`}
+                                onClick={handleImportClick}
+                                className="px-4 py-2 text-sm font-medium border border-gray-300 rounded-lg hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 flex items-center"
                             >
-                                Next
+                                <Upload className="w-4 h-4 mr-2" />
+                                Import
+                            </button>
+                        </div>
+                        
+                        <div className="flex gap-2">
+                            <button
+                                onClick={handleExportEmployees}
+                                className="px-4 py-2 text-sm font-medium border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 dark:border-blue-500 dark:text-blue-500 dark:hover:bg-gray-800 flex items-center"
+                            >
+                                <Download className="w-4 h-4 mr-2" />
+                                Export
+                            </button>
+                            <button
+                                onClick={onClose}
+                                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+                            >
+                                Done
                             </button>
                         </div>
                     </div>
-                    
-                    <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-2">
-                        <button
-                            onClick={onClose}
-                            className="px-4 py-2 text-sm font-medium border border-gray-300 rounded-lg hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            onClick={onClose}
-                            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
-                        >
-                            Confirm
-                        </button>
-                    </div>
                 </div>
             </div>
+            
+            {/* Confirmation Dialog */}
+            {showConfirmDialog.show && (
+                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg w-full max-w-md p-6 animate-fadeIn">
+                        <div className="flex items-center mb-4">
+                            <AlertTriangle className="h-6 w-6 text-yellow-500 mr-3" />
+                            <h3 className="text-lg font-medium text-gray-900 dark:text-white">Confirm Action</h3>
+                        </div>
+                        <p className="text-gray-700 dark:text-gray-300 mb-4">{showConfirmDialog.message}</p>
+                        <div className="flex justify-end gap-2">
+                            <button
+                                onClick={cancelConfirmedAction}
+                                className="px-4 py-2 text-sm font-medium border border-gray-300 rounded-lg hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                                disabled={actionInProgress}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={executeConfirmedAction}
+                                className={`px-4 py-2 text-sm font-medium text-white ${showConfirmDialog.action === 'delete' ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'} rounded-lg flex items-center`}
+                                disabled={actionInProgress}
+                            >
+                                {actionInProgress && (
+                                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                )}
+                                Confirm
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
             
             {/* Employee Detail Modal */}
             {selectedEmployee && isEmployeeDetailOpen && (

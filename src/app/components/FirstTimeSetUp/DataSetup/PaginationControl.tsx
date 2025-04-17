@@ -18,30 +18,23 @@ const PaginationControl: React.FC<PaginationControlProps> = ({
   // Calculate page numbers to display
   const getPageNumbers = () => {
     const pageNumbers = [];
-    
-    // Always include page 1
     pageNumbers.push(1);
     
-    // Calculate range around current page
     const rangeStart = Math.max(2, currentPage - 1);
     const rangeEnd = Math.min(totalPages - 1, currentPage + 1);
-    
-    // Add ellipsis if needed
+
     if (rangeStart > 2) {
       pageNumbers.push('...');
     }
     
-    // Add pages in range
     for (let i = rangeStart; i <= rangeEnd; i++) {
       pageNumbers.push(i);
     }
     
-    // Add ellipsis if needed
     if (rangeEnd < totalPages - 1) {
       pageNumbers.push('...');
     }
     
-    // Always include last page if not already included
     if (totalPages > 1) {
       pageNumbers.push(totalPages);
     }
