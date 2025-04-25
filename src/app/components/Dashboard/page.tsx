@@ -193,13 +193,11 @@ const DashboardPage: React.FC = () => {
         
         {/* Important Alerts with External Alert Support */}
         <div className="mt-8">
-          <h2 className="text-xl font-semibold mb-4">Important Alerts</h2>
           <ImportantAlerts externalAlerts={alerts} />
         </div>
         
         {/* Data Source Status with Alert Integration */}
         <div className="mt-8">
-          <h2 className="text-xl font-semibold mb-4">Data Source Status</h2>
           <DataSourceStatus addAlert={addAlert} />
         </div>
         

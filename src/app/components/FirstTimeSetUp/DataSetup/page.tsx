@@ -34,6 +34,7 @@ interface ButtonProps {
   className?: string;
   children: React.ReactNode;
   variant?: 'outline' | 'ghost' | 'default';
+  title?: string;
 }
 
 interface EmployeeDetailModalProps {
@@ -518,7 +519,8 @@ const DataOverviewPage: React.FC = () => {
     disabled = false, 
     className = '', 
     children, 
-    variant = 'default' 
+    variant = 'default',
+    title
   }) => {
     let buttonClass = "inline-flex items-center px-4 py-2 rounded-md shadow-sm text-sm font-medium ";
     
@@ -543,6 +545,7 @@ const DataOverviewPage: React.FC = () => {
         onClick={onClick}
         disabled={disabled}
         className={buttonClass}
+        title={title}
       >
         {children}
       </button>
@@ -729,7 +732,8 @@ const DataOverviewPage: React.FC = () => {
                                 {employee.name}
                                 {employee.hasQualityIssues && (
                                   <Badge className="ml-2 bg-amber-100 text-amber-800">
-                                    <AlertTriangle className="h-3 w-3 mr-1" />
+                                    <AlertTriangle className="h-3
+                                    w-3 mr-1" />
                                     Issue
                                   </Badge>
                                 )}
@@ -802,7 +806,7 @@ const DataOverviewPage: React.FC = () => {
         )}
       </div>
 
-      {/* Back and Next Buttons*/}
+      {/* Back and Next Buttons with Enhanced Security and UX */}
       <div className="flex justify-between mt-6 mb-6">
         <Button 
           onClick={handleBack} 
@@ -811,13 +815,31 @@ const DataOverviewPage: React.FC = () => {
           <ChevronLeft className="mr-1 h-4 w-4" />
           Previous
         </Button>
-        <Button 
-          onClick={handleNext}
-        >
-          Next
-          <ChevronRight className="ml-1 h-4 w-4" />
-        </Button>
+        
+        {/* Enhanced Next Button with conditional rendering for security */}
+        {dataCollected ? (
+          <Button onClick={handleNext}>
+            Next
+            <ChevronRight className="ml-1 h-4 w-4" />
+          </Button>
+        ) : (
+          <Button 
+            disabled={true} 
+            className="bg-gray-300 text-gray-500 hover:bg-gray-300 border-0 cursor-not-allowed opacity-80"
+            title="Please collect data before proceeding"
+          >
+            Next
+            <ChevronRight className="ml-1 h-4 w-4" />
+          </Button>
+        )}
       </div>
+
+      {/* Optional: Add a helper message when data hasn't been collected */}
+      {!dataCollected && !isCollecting && (
+        <div className="text-sm text-gray-500 text-center mt-2">
+          Run data collection to enable the Next button
+        </div>
+      )}
 
       {/* Employee Detail Modal */}
       {selectedEmployee && showDetailModal && (

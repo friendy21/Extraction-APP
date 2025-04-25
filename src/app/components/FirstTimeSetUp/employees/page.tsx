@@ -200,14 +200,17 @@ const EmployeePage: React.FC = () => {
     router.push('/components/FirstTimeSetUp/DataSetup');
   };
 
+  // Enhanced runDiscovery function with improved state handling
   const runDiscovery = async () => {
     setIsLoading(true);
     try {
       const totalCount = await employeeService.runDiscovery();
       setTotalEmployees(totalCount);
-      setIsDiscoveryComplete(true);
+      // Only mark discovery as complete if employees were actually found
+      setIsDiscoveryComplete(totalCount > 0);
     } catch (error) {
       console.error("Error during discovery:", error);
+      setIsDiscoveryComplete(false); // Ensure it's false on error
     } finally {
       setIsLoading(false);
     }
@@ -665,7 +668,14 @@ const EmployeePage: React.FC = () => {
           </>
         )}
         
-        {/* Navigation Buttons - Moved to the bottom outside all conditional rendering */}
+        {/* Helper Message when Discovery hasn't been run */}
+        {!isDiscoveryComplete && !isLoading && (
+          <div className="text-sm text-gray-500 text-center mt-2 mb-4">
+            Please run discovery to find employees before proceeding
+          </div>
+        )}
+        
+        {/* Navigation Buttons - Fixed version with proper disabling */}
         <div className="flex justify-between mt-6 mb-6">
           <Button 
             onClick={handleBack} 
@@ -674,12 +684,25 @@ const EmployeePage: React.FC = () => {
           >
             Previous
           </Button>
-          <Button 
-            onClick={handleNext} 
-            className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-6 rounded-md"
-          >
-            Next
-          </Button>
+          
+          {/* Enhanced Next button with stronger disabled state */}
+          {isDiscoveryComplete ? (
+            <Button 
+              onClick={handleNext}
+              className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-6 rounded-md transition-colors duration-200"
+            >
+              Next
+            </Button>
+          ) : (
+            <Button 
+              disabled={true}
+              aria-disabled="true"
+              title="Run discovery first to enable this button"
+              className="bg-gray-300 text-gray-500 cursor-not-allowed font-medium py-2 px-6 rounded-md"
+            >
+              Next
+            </Button>
+          )}
         </div>
       </div>
     </>

@@ -13,6 +13,7 @@ export default function AnonymizationPage() {
     "info" | "preview" | "processing" | "result"
   >("info");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isAnonymizationComplete, setIsAnonymizationComplete] = useState(false);
 
   const handleShowPreview = () => {
     setCurrentView("preview");
@@ -26,6 +27,7 @@ export default function AnonymizationPage() {
     setTimeout(() => {
       setIsProcessing(false);
       setCurrentView("result");
+      setIsAnonymizationComplete(true);
     }, 3000);
   };
 
@@ -37,6 +39,7 @@ export default function AnonymizationPage() {
     setTimeout(() => {
       setIsProcessing(false);
       setCurrentView("result");
+      setIsAnonymizationComplete(true);
     }, 3000);
   };
 
@@ -98,12 +101,17 @@ export default function AnonymizationPage() {
           Previous
         </button>
         <button 
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+          className={`px-4 py-2 rounded transition ${
+            isAnonymizationComplete 
+              ? "bg-blue-500 text-white hover:bg-blue-600" 
+              : "bg-gray-300 text-gray-500 cursor-not-allowed"
+          }`}
           onClick={handleNext}
+          disabled={!isAnonymizationComplete}
         >
           Next
         </button>
-        </div>
       </div>
-    );
-  }
+    </div>
+  );
+}

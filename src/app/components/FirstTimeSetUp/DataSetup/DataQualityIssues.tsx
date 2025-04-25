@@ -1458,40 +1458,6 @@ const DataQualityIssues: React.FC<DataQualityIssuesProps> = ({
         {/* Sidebar */}
         <div className="lg:col-span-1">
           <div className="space-y-6">
-            {/* Action Panel */}
-            <Card variant="bordered" className="bg-blue-50 border-blue-200">
-              <h3 className="font-semibold mb-4 text-blue-800">Quick Actions</h3>
-              <div className="space-y-3">
-                <Button 
-                  fullWidth
-                  variant="default"
-                  className="bg-blue-600 hover:bg-blue-700"
-                  iconLeft={<Zap className="h-4 w-4" />}
-                  onClick={() => setIsAutoFixModalOpen(true)}
-                  disabled={isApplyingChanges || (issueStats.aliasCount === 0 && issueStats.conflictCount === 0 && issueStats.missingCount === 0)}
-                >
-                  Auto-Fix All Issues
-                </Button>
-                <Button 
-                  fullWidth
-                  variant="outline"
-                  iconLeft={<RefreshCw className="h-4 w-4" />}
-                  onClick={handleMergeAllEmails}
-                  disabled={issueStats.aliasCount === 0}
-                >
-                  Merge All Email Aliases
-                </Button>
-                <Button 
-                  fullWidth
-                  variant="outline"
-                  iconLeft={<Check className="h-4 w-4" />}
-                  onClick={handleApplyResolutions}
-                  disabled={issueStats.conflictCount === 0}
-                >
-                  Resolve All Conflicts
-                </Button>
-              </div>
-            </Card>
             
             {/* Progress Overview */}
             <Card variant="default">

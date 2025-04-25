@@ -113,32 +113,32 @@ interface AlertTheme {
   };
 }
 
-// Define default theme
+// Define enhanced theme with better contrast
 const defaultTheme: AlertTheme = {
   colors: {
     warning: {
-      text: 'text-amber-600',
-      bg: 'bg-amber-50',
-      border: 'border-l-amber-500',
-      hover: 'hover:bg-amber-100',
+      text: 'text-amber-800',
+      bg: 'bg-amber-100',
+      border: 'border-l-amber-600',
+      hover: 'hover:bg-amber-200',
     },
     error: {
-      text: 'text-red-600',
-      bg: 'bg-red-50',
-      border: 'border-l-red-500',
-      hover: 'hover:bg-red-100',
+      text: 'text-red-800',
+      bg: 'bg-red-100',
+      border: 'border-l-red-600',
+      hover: 'hover:bg-red-200',
     },
     info: {
-      text: 'text-blue-600',
-      bg: 'bg-blue-50',
-      border: 'border-l-blue-500',
-      hover: 'hover:bg-blue-100',
+      text: 'text-blue-800',
+      bg: 'bg-blue-100',
+      border: 'border-l-blue-600',
+      hover: 'hover:bg-blue-200',
     },
     success: {
-      text: 'text-green-600',
-      bg: 'bg-green-50',
-      border: 'border-l-green-500',
-      hover: 'hover:bg-green-100',
+      text: 'text-green-800',
+      bg: 'bg-green-100',
+      border: 'border-l-green-600',
+      hover: 'hover:bg-green-200',
     },
   },
   animations: {
@@ -149,32 +149,32 @@ const defaultTheme: AlertTheme = {
   },
 };
 
-// Dark theme variant
+// Dark theme variant with enhanced contrast
 const darkTheme: AlertTheme = {
   colors: {
     warning: {
-      text: 'text-amber-400',
-      bg: 'bg-amber-900/30',
+      text: 'text-amber-300',
+      bg: 'bg-amber-900/50',
       border: 'border-l-amber-500',
-      hover: 'hover:bg-amber-900/50',
+      hover: 'hover:bg-amber-900/70',
     },
     error: {
-      text: 'text-red-400',
-      bg: 'bg-red-900/30',
+      text: 'text-red-300',
+      bg: 'bg-red-900/50',
       border: 'border-l-red-500',
-      hover: 'hover:bg-red-900/50',
+      hover: 'hover:bg-red-900/70',
     },
     info: {
-      text: 'text-blue-400',
-      bg: 'bg-blue-900/30',
+      text: 'text-blue-300',
+      bg: 'bg-blue-900/50',
       border: 'border-l-blue-500',
-      hover: 'hover:bg-blue-900/50',
+      hover: 'hover:bg-blue-900/70',
     },
     success: {
-      text: 'text-green-400',
-      bg: 'bg-green-900/30',
+      text: 'text-green-300',
+      bg: 'bg-green-900/50',
       border: 'border-l-green-500',
-      hover: 'hover:bg-green-900/50',
+      hover: 'hover:bg-green-900/70',
     },
   },
   animations: {
@@ -533,28 +533,28 @@ const AlertItem: React.FC<AlertItemProps> = ({
     
     switch (alert.priority) {
       case 'critical':
-        bgColor = 'bg-red-100 dark:bg-red-900/30';
-        textColor = 'text-red-800 dark:text-red-300';
+        bgColor = 'bg-red-200 dark:bg-red-900/50';
+        textColor = 'text-red-900 dark:text-red-200';
         break;
       case 'high':
-        bgColor = 'bg-orange-100 dark:bg-orange-900/30';
-        textColor = 'text-orange-800 dark:text-orange-300';
+        bgColor = 'bg-orange-200 dark:bg-orange-900/50';
+        textColor = 'text-orange-900 dark:text-orange-200';
         break;
       case 'medium':
-        bgColor = 'bg-amber-100 dark:bg-amber-900/30';
-        textColor = 'text-amber-800 dark:text-amber-300';
+        bgColor = 'bg-amber-200 dark:bg-amber-900/50';
+        textColor = 'text-amber-900 dark:text-amber-200';
         break;
       case 'low':
-        bgColor = 'bg-green-100 dark:bg-green-900/30';
-        textColor = 'text-green-800 dark:text-green-300';
+        bgColor = 'bg-green-200 dark:bg-green-900/50';
+        textColor = 'text-green-900 dark:text-green-200';
         break;
       default:
-        bgColor = 'bg-gray-100 dark:bg-gray-800';
-        textColor = 'text-gray-800 dark:text-gray-300';
+        bgColor = 'bg-gray-200 dark:bg-gray-800';
+        textColor = 'text-gray-900 dark:text-gray-200';
     }
     
     return (
-      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${bgColor} ${textColor}`}>
+      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${bgColor} ${textColor}`}>
         {alert.priority.charAt(0).toUpperCase() + alert.priority.slice(1)}
       </span>
     );
@@ -592,14 +592,14 @@ const AlertItem: React.FC<AlertItemProps> = ({
   return (
     <div 
       ref={alertRef}
-      className={`border-b border-gray-200 dark:border-gray-700 last:border-b-0 ${
+      className={`border-b border-gray-300 dark:border-gray-600 last:border-b-0 ${
         theme.animations.transition
       } ${
         config.enableHoverEffects ? hoverColor : ''
       } ${
-        !alert.isRead ? 'bg-gray-50 dark:bg-gray-800/50' : 'bg-white dark:bg-gray-800'
+        !alert.isRead ? 'bg-gray-50 dark:bg-gray-800/70' : 'bg-white dark:bg-gray-800'
       } border-l-4 ${borderColor} ${
-        isSelected ? 'ring-2 ring-blue-400 dark:ring-blue-500' : ''
+        isSelected ? 'ring-2 ring-blue-500 dark:ring-blue-400' : ''
       }`}
       onClick={(e) => {
         // If user clicks on the row but not on buttons, select it
@@ -619,14 +619,14 @@ const AlertItem: React.FC<AlertItemProps> = ({
           <div className={`${iconBg} rounded-full p-2 mr-4 flex-shrink-0 ${config.compactMode ? 'h-8 w-8 flex items-center justify-center' : ''}`}>
             {renderServiceIcon()}
             {alert.isPinned && (
-              <div className="absolute -top-1 -right-1 bg-amber-400 rounded-full h-3 w-3 border border-white dark:border-gray-800"></div>
+              <div className="absolute -top-1 -right-1 bg-amber-500 rounded-full h-3 w-3 border border-white dark:border-gray-800"></div>
             )}
           </div>
 
           {/* Content */}
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <h3 className={`font-medium text-gray-900 dark:text-gray-100 ${config.compactMode ? 'text-sm' : ''}`}>
+              <h3 className={`font-semibold text-gray-900 dark:text-white ${config.compactMode ? 'text-sm' : ''}`}>
                 {alert.title}
               </h3>
               
@@ -634,7 +634,7 @@ const AlertItem: React.FC<AlertItemProps> = ({
               {config.showStatusIndicators && (
                 <>
                   {!alert.isRead && (
-                    <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 text-xs px-2 py-0.5 rounded-full">
+                    <span className="bg-blue-200 dark:bg-blue-800 text-blue-900 dark:text-blue-100 text-xs font-semibold px-2 py-0.5 rounded-full">
                       New
                     </span>
                   )}
@@ -642,10 +642,10 @@ const AlertItem: React.FC<AlertItemProps> = ({
                   {renderPriorityBadge()}
                   
                   {alert.status && alert.status !== 'active' && (
-                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
                       alert.status === 'resolved' 
-                        ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' 
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
+                        ? 'bg-green-200 dark:bg-green-900/50 text-green-900 dark:text-green-200' 
+                        : 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-200'
                     }`}>
                       {alert.status.charAt(0).toUpperCase() + alert.status.slice(1)}
                     </span>
@@ -655,13 +655,13 @@ const AlertItem: React.FC<AlertItemProps> = ({
             </div>
             
             <div className="flex justify-between items-start gap-4">
-              <p className={`text-gray-600 dark:text-gray-300 pr-4 ${config.compactMode ? 'text-xs line-clamp-1' : 'text-sm'}`}>
+              <p className={`text-gray-800 dark:text-gray-200 pr-4 ${config.compactMode ? 'text-xs line-clamp-1' : 'text-sm'}`}>
                 {alert.description}
               </p>
               
               {/* Time indicator */}
               {alert.timestamp && config.showTimestamps && (
-                <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                <div className="flex items-center text-xs text-gray-700 dark:text-gray-300 whitespace-nowrap">
                   <Clock className="h-3 w-3 mr-1" />
                   {formattedTime}
                 </div>
@@ -672,7 +672,7 @@ const AlertItem: React.FC<AlertItemProps> = ({
             {(hasCategory || hasTags) && (
               <div className="mt-1 flex flex-wrap gap-1">
                 {hasCategory && (
-                  <span className="inline-flex items-center rounded-md bg-gray-100 dark:bg-gray-700 px-2 py-0.5 text-xs font-medium text-gray-800 dark:text-gray-200">
+                  <span className="inline-flex items-center rounded-md bg-gray-200 dark:bg-gray-700 px-2 py-0.5 text-xs font-medium text-gray-900 dark:text-gray-100">
                     {alert.category}
                   </span>
                 )}
@@ -680,7 +680,7 @@ const AlertItem: React.FC<AlertItemProps> = ({
                 {hasTags && alert.tags?.map((tag, index) => (
                   <span 
                     key={`${alert.id}-tag-${index}`}
-                    className="inline-flex items-center rounded-md bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 text-xs font-medium text-blue-700 dark:text-blue-300"
+                    className="inline-flex items-center rounded-md bg-blue-100 dark:bg-blue-900/40 px-2 py-0.5 text-xs font-medium text-blue-800 dark:text-blue-200"
                   >
                     {tag}
                   </span>
@@ -695,7 +695,7 @@ const AlertItem: React.FC<AlertItemProps> = ({
                   e.stopPropagation();
                   onToggleExpand(alert.id);
                 }}
-                className={`text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 mt-1 flex items-center ${theme.animations.transition}`}
+                className={`text-xs text-blue-700 dark:text-blue-300 hover:text-blue-900 dark:hover:text-blue-200 mt-1 flex items-center ${theme.animations.transition}`}
                 aria-expanded={isExpanded}
               >
                 {isExpanded ? (
@@ -722,7 +722,7 @@ const AlertItem: React.FC<AlertItemProps> = ({
                 e.stopPropagation();
                 onTogglePin(alert.id);
               }}
-              className="p-1.5 text-amber-500 dark:text-amber-400 hover:text-amber-600 dark:hover:text-amber-300 rounded-full hover:bg-amber-50 dark:hover:bg-amber-900/20"
+              className="p-1.5 text-amber-600 dark:text-amber-300 hover:text-amber-800 dark:hover:text-amber-200 rounded-full hover:bg-amber-100 dark:hover:bg-amber-900/40"
               title="Unpin alert"
             >
               <Pin className="h-4 w-4" />
@@ -735,7 +735,7 @@ const AlertItem: React.FC<AlertItemProps> = ({
                 e.stopPropagation();
                 onTogglePin(alert.id);
               }}
-              className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-amber-500 dark:hover:text-amber-400 rounded-full hover:bg-amber-50 dark:hover:bg-amber-900/20"
+              className="p-1.5 text-gray-600 dark:text-gray-400 hover:text-amber-600 dark:hover:text-amber-300 rounded-full hover:bg-amber-100 dark:hover:bg-amber-900/40"
               title="Pin alert"
             >
               <PinOff className="h-4 w-4" />
@@ -748,7 +748,7 @@ const AlertItem: React.FC<AlertItemProps> = ({
                 e.stopPropagation();
                 onMarkAsRead(alert.id);
               }}
-              className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/20"
+              className="p-1.5 text-gray-600 dark:text-gray-300 hover:text-blue-700 dark:hover:text-blue-300 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/40"
               title="Mark as read"
             >
               <Eye className="h-4 w-4" />
@@ -769,12 +769,12 @@ const AlertItem: React.FC<AlertItemProps> = ({
               disabled={alert.actions[0].disabled}
               className={`px-3 py-1 text-sm font-medium rounded flex items-center ${
                 alert.type === 'error' 
-                  ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-900/50' 
+                  ? 'bg-red-200 dark:bg-red-800 text-red-900 dark:text-red-100 hover:bg-red-300 dark:hover:bg-red-700' 
                 : alert.type === 'warning' 
-                  ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900/50' 
+                  ? 'bg-amber-200 dark:bg-amber-800 text-amber-900 dark:text-amber-100 hover:bg-amber-300 dark:hover:bg-amber-700' 
                 : alert.type === 'success' 
-                  ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900/50' 
-                : 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/50'
+                  ? 'bg-green-200 dark:bg-green-800 text-green-900 dark:text-green-100 hover:bg-green-300 dark:hover:bg-green-700' 
+                : 'bg-blue-200 dark:bg-blue-800 text-blue-900 dark:text-blue-100 hover:bg-blue-300 dark:hover:bg-blue-700'
               } ${
                 alert.actions[0].disabled ? 'opacity-50 cursor-not-allowed' : ''
               }`}
@@ -792,14 +792,14 @@ const AlertItem: React.FC<AlertItemProps> = ({
                   e.stopPropagation();
                   setMenuOpen(!menuOpen);
                 }}
-                className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
+                className="p-1.5 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full"
                 title="More options"
               >
                 <MoreHorizontal className="h-4 w-4" />
               </button>
               
               {menuOpen && (
-                <div className="absolute right-0 mt-1 w-48 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 divide-y divide-gray-100 dark:divide-gray-700 z-10 animate-fadeIn">
+                <div className="absolute right-0 mt-1 w-48 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 divide-y divide-gray-200 dark:divide-gray-700 z-10 animate-fadeIn">
                   <div className="py-1">
                     {alert.actions.slice(1).map((action, idx) => (
                       <button 
@@ -817,7 +817,7 @@ const AlertItem: React.FC<AlertItemProps> = ({
                         className={`w-full text-left px-4 py-2 text-sm ${
                           action.disabled 
                             ? 'text-gray-400 dark:text-gray-500 cursor-not-allowed' 
-                            : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
+                            : 'text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700'
                         } flex items-center`}
                       >
                         {action.icon}
@@ -836,7 +836,7 @@ const AlertItem: React.FC<AlertItemProps> = ({
               e.stopPropagation();
               onDismiss(alert.id);
             }}
-            className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
+            className="p-1.5 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full"
             title="Dismiss"
           >
             <X className="h-4 w-4" />
@@ -846,18 +846,18 @@ const AlertItem: React.FC<AlertItemProps> = ({
       
       {/* Expanded details section */}
       {isExpanded && alert.details && (
-        <div className={`px-5 py-4 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-700 ${theme.animations.expand}`}>
-          <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{alert.details}</p>
+        <div className={`px-5 py-4 bg-gray-100 dark:bg-gray-800/80 border-t border-gray-300 dark:border-gray-600 ${theme.animations.expand}`}>
+          <p className="text-sm text-gray-800 dark:text-gray-200 leading-relaxed">{alert.details}</p>
           
           {/* Related resources if available */}
           {alert.relatedResources && alert.relatedResources.length > 0 && (
             <div className="mt-3">
-              <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Related Resources:</h4>
+              <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Related Resources:</h4>
               <div className="flex flex-wrap gap-2">
                 {alert.relatedResources.map((resource, idx) => (
                   <span 
                     key={`${alert.id}-resource-${idx}`}
-                    className="inline-flex items-center rounded-md bg-gray-100 dark:bg-gray-700 px-2 py-0.5 text-xs text-gray-800 dark:text-gray-200"
+                    className="inline-flex items-center rounded-md bg-gray-200 dark:bg-gray-700 px-2 py-0.5 text-xs text-gray-900 dark:text-gray-100"
                   >
                     {resource}
                   </span>
@@ -869,12 +869,12 @@ const AlertItem: React.FC<AlertItemProps> = ({
           {/* Related alerts if available */}
           {alert.relatedAlerts && alert.relatedAlerts.length > 0 && (
             <div className="mt-3">
-              <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Related Alerts:</h4>
+              <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Related Alerts:</h4>
               <div className="flex flex-wrap gap-2">
                 {alert.relatedAlerts.map((relatedAlert, idx) => (
                   <span 
                     key={`${alert.id}-related-${idx}`}
-                    className="inline-flex items-center rounded-md bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 text-xs text-blue-700 dark:text-blue-300"
+                    className="inline-flex items-center rounded-md bg-blue-100 dark:bg-blue-900/40 px-2 py-0.5 text-xs text-blue-800 dark:text-blue-200"
                   >
                     {relatedAlert}
                   </span>
@@ -888,8 +888,8 @@ const AlertItem: React.FC<AlertItemProps> = ({
             <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
               {Object.entries(alert.metadata).map(([key, value], idx) => (
                 <div key={`${alert.id}-meta-${idx}`}>
-                  <span className="font-medium text-gray-500 dark:text-gray-400">{key}: </span>
-                  <span className="text-gray-800 dark:text-gray-200">
+                  <span className="font-semibold text-gray-700 dark:text-gray-300">{key}: </span>
+                  <span className="text-gray-900 dark:text-gray-100">
                     {typeof value === 'object' ? JSON.stringify(value) : String(value)}
                   </span>
                 </div>
@@ -899,16 +899,16 @@ const AlertItem: React.FC<AlertItemProps> = ({
           
           {/* Affected users if available */}
           {alert.affectedUsers && (
-            <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-              <span className="font-medium">Affected users: </span>
-              <span className="text-gray-700 dark:text-gray-300">{alert.affectedUsers.toLocaleString()}</span>
+            <div className="mt-2 text-xs text-gray-700 dark:text-gray-300">
+              <span className="font-semibold">Affected users: </span>
+              <span className="text-gray-900 dark:text-gray-100">{alert.affectedUsers.toLocaleString()}</span>
             </div>
           )}
           
           {/* Assignment info if available */}
           {alert.assignedTo && (
-            <div className="mt-3 flex items-center text-xs text-gray-600 dark:text-gray-300">
-              <span className="font-medium text-gray-500 dark:text-gray-400 mr-1">Assigned to: </span>
+            <div className="mt-3 flex items-center text-xs text-gray-800 dark:text-gray-200">
+              <span className="font-semibold text-gray-700 dark:text-gray-300 mr-1">Assigned to: </span>
               <div className="flex items-center">
                 {alert.assignedTo.avatar ? (
                   <img 
@@ -917,15 +917,15 @@ const AlertItem: React.FC<AlertItemProps> = ({
                     className="h-5 w-5 rounded-full mr-1"
                   />
                 ) : (
-                  <div className="h-5 w-5 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center mr-1">
-                    <span className="text-xs text-gray-600 dark:text-gray-300">
+                  <div className="h-5 w-5 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center mr-1">
+                    <span className="text-xs text-gray-800 dark:text-gray-200">
                       {alert.assignedTo.name.charAt(0).toUpperCase()}
                     </span>
                   </div>
                 )}
                 <span>{alert.assignedTo.name}</span>
                 {alert.assignedTo.role && (
-                  <span className="ml-1 text-gray-500 dark:text-gray-400">({alert.assignedTo.role})</span>
+                  <span className="ml-1 text-gray-700 dark:text-gray-300">({alert.assignedTo.role})</span>
                 )}
               </div>
             </div>
@@ -937,7 +937,7 @@ const AlertItem: React.FC<AlertItemProps> = ({
                 e.stopPropagation();
                 onDismiss(alert.id);
               }}
-              className="px-3 py-1.5 text-xs bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center"
+              className="px-3 py-1.5 text-xs bg-white dark:bg-gray-700 border border-gray-400 dark:border-gray-500 rounded-md shadow-sm text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center"
             >
               <X className="h-3 w-3 mr-1" />
               Dismiss
@@ -962,7 +962,7 @@ const AlertItem: React.FC<AlertItemProps> = ({
                   : alert.type === 'success'
                     ? 'bg-green-600 dark:bg-green-700 hover:bg-green-700 dark:hover:bg-green-600'
                   : 'bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-600'
-                } border border-transparent rounded-md shadow-sm text-white flex items-center ${
+                } border border-transparent rounded-md shadow-sm text-white font-semibold flex items-center ${
                   alert.actions[0].disabled ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
               >
@@ -976,7 +976,7 @@ const AlertItem: React.FC<AlertItemProps> = ({
       
       {/* Confirmation modal */}
       {confirmAction.isOpen && confirmAction.action && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 dark:bg-opacity-70 animate-fadeIn">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 dark:bg-opacity-80 animate-fadeIn">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-96 mx-4">
             <div className="flex items-center justify-center mb-4">
               <div className={`${iconBg} rounded-full p-3`}>
@@ -991,10 +991,10 @@ const AlertItem: React.FC<AlertItemProps> = ({
                 )}
               </div>
             </div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 text-center mb-2">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white text-center mb-2">
               Confirm Action
             </h3>
-            <p className="text-center text-gray-600 dark:text-gray-300 mb-4">
+            <p className="text-center text-gray-800 dark:text-gray-200 mb-4">
               {confirmAction.action.confirmationText || `Are you sure you want to ${confirmAction.action.text.toLowerCase()}?`}
             </p>
             <div className="flex justify-center space-x-4">
@@ -1003,7 +1003,7 @@ const AlertItem: React.FC<AlertItemProps> = ({
                   e.stopPropagation();
                   setConfirmAction({ action: null, isOpen: false });
                 }}
-                className="px-4 py-2 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600"
+                className="px-4 py-2 text-sm bg-white dark:bg-gray-700 border border-gray-400 dark:border-gray-500 rounded-md shadow-sm text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-600"
               >
                 Cancel
               </button>
@@ -1013,7 +1013,7 @@ const AlertItem: React.FC<AlertItemProps> = ({
                   confirmAction.action?.onClick();
                   setConfirmAction({ action: null, isOpen: false });
                 }}
-                className={`px-4 py-2 text-sm ${
+                className={`px-4 py-2 text-sm font-semibold ${
                   alert.type === 'error' 
                     ? 'bg-red-600 dark:bg-red-700 hover:bg-red-700 dark:hover:bg-red-600'
                   : alert.type === 'warning'
@@ -1050,14 +1050,14 @@ const SearchInput: React.FC<SearchProps> = ({
   return (
     <div className="relative flex-1">
       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-        <Search className="h-4 w-4 text-gray-400 dark:text-gray-500" />
+        <Search className="h-4 w-4 text-gray-600 dark:text-gray-400" />
       </div>
       <input
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={(e) => e.key === 'Enter' && onSearch()}
-        className="pl-10 pr-4 py-2 w-full border border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
+        className="pl-10 pr-4 py-2 w-full border border-gray-400 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 text-gray-900"
         placeholder={placeholder}
       />
     </div>
@@ -1688,18 +1688,18 @@ const ImportantAlerts: React.FC<ImportantAlertsProps> = ({
   return (
     <div className={`${
       isDarkMode ? 'dark bg-gray-900 text-white' : 'bg-white text-black'
-    } rounded-lg shadow-lg overflow-hidden ${uiConfig.borderRadius}`}>
+    } rounded-lg shadow-lg overflow-hidden ${uiConfig.borderRadius} border border-gray-300 dark:border-gray-600`}>
       {/* Header with filters */}
-      <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+      <div className="p-4 border-b border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-800">
         <div className="flex flex-col md:flex-row justify-between items-center mb-4">
           <div className="flex items-center mb-2 md:mb-0">
-            <div className="bg-blue-100 dark:bg-blue-900/30 rounded-full p-2 mr-3">
-              <Bell className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            <div className="bg-blue-200 dark:bg-blue-800 rounded-full p-2 mr-3">
+              <Bell className="h-5 w-5 text-blue-800 dark:text-blue-200" />
             </div>
-            <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
               {title}
               {unreadCount > 0 && (
-                <span className="ml-2 bg-blue-600 dark:bg-blue-500 text-white text-xs rounded-full px-2 py-0.5">
+                <span className="ml-2 bg-blue-700 dark:bg-blue-600 text-white text-xs font-bold rounded-full px-2 py-0.5">
                   {unreadCount} new
                 </span>
               )}
@@ -1708,7 +1708,7 @@ const ImportantAlerts: React.FC<ImportantAlertsProps> = ({
           
           <div className="flex items-center space-x-2">
             <button 
-              className="flex items-center text-sm text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-2 py-1"
+              className="flex items-center text-sm text-gray-800 dark:text-gray-200 hover:text-blue-800 dark:hover:text-blue-300 px-2 py-1"
               onClick={() => setShowTimeAgo(!showTimeAgo)}
               aria-label={showTimeAgo ? "Show absolute timestamps" : "Show relative timestamps"}
             >
@@ -1721,7 +1721,7 @@ const ImportantAlerts: React.FC<ImportantAlertsProps> = ({
             </button>
             
             <button
-              className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/20"
+              className="p-1.5 text-gray-700 dark:text-gray-300 hover:text-blue-800 dark:hover:text-blue-300 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/30"
               onClick={() => setIsCollapsed(!isCollapsed)}
               aria-label={isCollapsed ? "Expand alerts" : "Collapse alerts"}
               aria-expanded={!isCollapsed}
@@ -1744,7 +1744,7 @@ const ImportantAlerts: React.FC<ImportantAlertsProps> = ({
               
               <div className="flex space-x-2">
                 <button
-                  className="flex items-center justify-center px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                  className="flex items-center justify-center px-3 py-2 bg-gray-300 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded hover:bg-gray-400 dark:hover:bg-gray-600 transition-colors"
                   onClick={() => {
                     setFilterType('all');
                     setFilterService('all');
@@ -1759,7 +1759,7 @@ const ImportantAlerts: React.FC<ImportantAlertsProps> = ({
                 </button>
                 
                 <button
-                  className="flex items-center px-3 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
+                  className="flex items-center px-3 py-2 bg-blue-600 dark:bg-blue-700 text-white font-medium rounded hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
                   onClick={() => setUiConfig(prev => ({
                     ...prev,
                     compactMode: !prev.compactMode
@@ -1775,11 +1775,11 @@ const ImportantAlerts: React.FC<ImportantAlertsProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
               {/* Alert Type Filter */}
               <div className="relative">
-                <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500">
+                <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600 dark:text-gray-400">
                   <Filter className="h-4 w-4" />
                 </div>
                 <select
-                  className="pl-9 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 w-full text-sm dark:bg-gray-700 dark:text-white"
+                  className="pl-9 pr-4 py-2 border border-gray-400 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 w-full text-sm dark:bg-gray-700 dark:text-white text-gray-900"
                   value={filterType}
                   onChange={(e) => setFilterType(e.target.value)}
                   aria-label="Filter by alert type"
@@ -1796,7 +1796,7 @@ const ImportantAlerts: React.FC<ImportantAlertsProps> = ({
               {services.length > 0 && (
                 <div className="relative">
                   <select
-                    className="pl-3 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 w-full text-sm dark:bg-gray-700 dark:text-white"
+                    className="pl-3 pr-4 py-2 border border-gray-400 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 w-full text-sm dark:bg-gray-700 dark:text-white text-gray-900"
                     value={filterService}
                     onChange={(e) => setFilterService(e.target.value)}
                     aria-label="Filter by service"
@@ -1815,7 +1815,7 @@ const ImportantAlerts: React.FC<ImportantAlertsProps> = ({
               {priorities.length > 0 && (
                 <div className="relative">
                   <select
-                    className="pl-3 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 w-full text-sm dark:bg-gray-700 dark:text-white"
+                    className="pl-3 pr-4 py-2 border border-gray-400 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 w-full text-sm dark:bg-gray-700 dark:text-white text-gray-900"
                     value={filterPriority}
                     onChange={(e) => setFilterPriority(e.target.value)}
                     aria-label="Filter by priority"
@@ -1833,7 +1833,7 @@ const ImportantAlerts: React.FC<ImportantAlertsProps> = ({
               {statuses.length > 0 && (
                 <div className="relative">
                   <select
-                    className="pl-3 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 w-full text-sm dark:bg-gray-700 dark:text-white"
+                    className="pl-3 pr-4 py-2 border border-gray-400 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 w-full text-sm dark:bg-gray-700 dark:text-white text-gray-900"
                     value={filterStatus}
                     onChange={(e) => setFilterStatus(e.target.value)}
                     aria-label="Filter by status"
@@ -1853,12 +1853,12 @@ const ImportantAlerts: React.FC<ImportantAlertsProps> = ({
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-2 sm:space-y-0">
               {/* Sorting controls */}
               <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-500 dark:text-gray-400">Sort by:</span>
+                <span className="text-sm text-gray-700 dark:text-gray-300 font-medium">Sort by:</span>
                 <button 
                   className={`px-2 py-1 text-xs rounded-md flex items-center ${
                     sortOrder.field === 'timestamp' 
-                      ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300' 
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                      ? 'bg-blue-200 dark:bg-blue-800 text-blue-900 dark:text-blue-100 font-semibold' 
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
                   }`}
                   onClick={() => handleSort('timestamp')}
                 >
@@ -1872,8 +1872,8 @@ const ImportantAlerts: React.FC<ImportantAlertsProps> = ({
                 <button 
                   className={`px-2 py-1 text-xs rounded-md flex items-center ${
                     sortOrder.field === 'priority' 
-                      ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300' 
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                      ? 'bg-blue-200 dark:bg-blue-800 text-blue-900 dark:text-blue-100 font-semibold' 
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
                   }`}
                   onClick={() => handleSort('priority')}
                 >
@@ -1887,8 +1887,8 @@ const ImportantAlerts: React.FC<ImportantAlertsProps> = ({
                 <button 
                   className={`px-2 py-1 text-xs rounded-md flex items-center ${
                     sortOrder.field === 'type' 
-                      ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300' 
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                      ? 'bg-blue-200 dark:bg-blue-800 text-blue-900 dark:text-blue-100 font-semibold' 
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
                   }`}
                   onClick={() => handleSort('type')}
                 >
@@ -1905,7 +1905,7 @@ const ImportantAlerts: React.FC<ImportantAlertsProps> = ({
               <div className="flex space-x-2 w-full sm:w-auto justify-end">
                 {unreadCount > 0 && (
                   <button
-                    className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                    className="text-sm text-blue-700 dark:text-blue-300 hover:text-blue-900 dark:hover:text-blue-200 font-medium"
                     onClick={markAllAsRead}
                   >
                     Mark all as read
@@ -1915,13 +1915,13 @@ const ImportantAlerts: React.FC<ImportantAlertsProps> = ({
                 {selectedAlerts.length > 0 && enableGroupActions && (
                   <>
                     <button
-                      className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                      className="text-sm text-blue-700 dark:text-blue-300 hover:text-blue-900 dark:hover:text-blue-200 font-medium"
                       onClick={markSelectedAsRead}
                     >
                       Mark {selectedAlerts.length} as read
                     </button>
                     <button
-                      className="text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
+                      className="text-sm text-red-700 dark:text-red-300 hover:text-red-900 dark:hover:text-red-200 font-medium"
                       onClick={dismissSelected}
                     >
                       Dismiss {selectedAlerts.length} selected
@@ -1931,7 +1931,7 @@ const ImportantAlerts: React.FC<ImportantAlertsProps> = ({
                 
                 {alerts.length > 0 && !selectedAlerts.length && (
                   <button
-                    className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+                    className="text-sm text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 font-medium"
                     onClick={dismissAll}
                   >
                     Dismiss all
@@ -1945,17 +1945,17 @@ const ImportantAlerts: React.FC<ImportantAlertsProps> = ({
       
       {/* Select all checkbox if group actions enabled */}
       {!isCollapsed && filteredAlerts.length > 0 && enableGroupActions && (
-        <div className="px-4 py-2 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center">
-          <label className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-300">
+        <div className="px-4 py-2 bg-gray-100 dark:bg-gray-800 border-b border-gray-300 dark:border-gray-600 flex items-center">
+          <label className="flex items-center space-x-2 text-sm text-gray-800 dark:text-gray-200">
             <input 
               type="checkbox" 
               checked={selectedAlerts.length === filteredAlerts.length && filteredAlerts.length > 0} 
               onChange={handleSelectAll}
-              className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+              className="h-4 w-4 text-blue-600 rounded border-gray-400 dark:border-gray-500 focus:ring-blue-500"
             />
             <span>Select all</span>
           </label>
-          <span className="text-xs text-gray-500 dark:text-gray-400 ml-4">
+          <span className="text-xs text-gray-700 dark:text-gray-300 ml-4">
             {selectedAlerts.length} of {filteredAlerts.length} selected
           </span>
         </div>
@@ -1994,19 +1994,19 @@ const ImportantAlerts: React.FC<ImportantAlertsProps> = ({
             />
           )) : (
             <div className="py-12 px-4 text-center">
-              <div className="bg-green-100 dark:bg-green-900/30 rounded-full p-4 mx-auto w-16 h-16 flex items-center justify-center mb-4">
+              <div className="bg-green-200 dark:bg-green-800 rounded-full p-4 mx-auto w-16 h-16 flex items-center justify-center mb-4">
                 {activeSearch || filterType !== 'all' || filterService !== 'all' || filterPriority !== 'all' || filterStatus !== 'all' ? (
-                  <Search className="h-8 w-8 text-gray-500 dark:text-gray-400" />
+                  <Search className="h-8 w-8 text-gray-700 dark:text-gray-300" />
                 ) : (
-                  <Check className="h-8 w-8 text-green-600 dark:text-green-400" />
+                  <Check className="h-8 w-8 text-green-700 dark:text-green-300" />
                 )}
               </div>
-              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
                 {activeSearch || filterType !== 'all' || filterService !== 'all' || filterPriority !== 'all' || filterStatus !== 'all'
                   ? 'No matching alerts found'
                   : 'All systems normal'}
               </h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto">
+              <p className="text-sm text-gray-700 dark:text-gray-300 max-w-md mx-auto">
                 {activeSearch || filterType !== 'all' || filterService !== 'all' || filterPriority !== 'all' || filterStatus !== 'all' 
                   ? 'Try adjusting your filters or search terms to find what you\'re looking for.' 
                   : 'There are no active alerts at this time. All monitored systems are operating normally.'}
@@ -2022,7 +2022,7 @@ const ImportantAlerts: React.FC<ImportantAlertsProps> = ({
                     setActiveSearch('');
                     setSearchQuery('');
                   }}
-                  className="mt-4 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-700 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
+                  className="mt-4 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-700 text-white font-medium rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
                 >
                   Clear filters
                 </button>
@@ -2033,14 +2033,14 @@ const ImportantAlerts: React.FC<ImportantAlertsProps> = ({
       )}
       
       {isCollapsed && alerts.length > 0 && (
-        <div className="p-4 text-center text-sm text-gray-600 dark:text-gray-300">
+        <div className="p-4 text-center text-sm text-gray-800 dark:text-gray-200 font-medium">
           {alerts.length} alert{alerts.length !== 1 ? 's' : ''} {unreadCount > 0 ? `(${unreadCount} new)` : ''}
         </div>
       )}
       
       {/* Footer with stats */}
       {!isCollapsed && filteredAlerts.length > 0 && (
-        <div className="p-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-xs text-gray-500 dark:text-gray-400 flex justify-between items-center flex-wrap gap-2">
+        <div className="p-3 border-t border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-800 text-xs text-gray-700 dark:text-gray-300 flex justify-between items-center flex-wrap gap-2">
           <div>
             {filteredAlerts.length} alert{filteredAlerts.length !== 1 ? 's' : ''} displayed
             {(activeSearch || filterType !== 'all' || filterService !== 'all' || filterPriority !== 'all' || filterStatus !== 'all')
@@ -2050,25 +2050,25 @@ const ImportantAlerts: React.FC<ImportantAlertsProps> = ({
           <div className="flex flex-wrap gap-4">
             {errorCount > 0 && (
               <span className="flex items-center">
-                <span className="w-2 h-2 bg-red-500 rounded-full mr-1"></span>
+                <span className="w-2 h-2 bg-red-600 rounded-full mr-1"></span>
                 {errorCount} error{errorCount !== 1 ? 's' : ''}
               </span>
             )}
             {warningCount > 0 && (
               <span className="flex items-center">
-                <span className="w-2 h-2 bg-amber-500 rounded-full mr-1"></span>
+                <span className="w-2 h-2 bg-amber-600 rounded-full mr-1"></span>
                 {warningCount} warning{warningCount !== 1 ? 's' : ''}
               </span>
             )}
             {infoCount > 0 && (
               <span className="flex items-center">
-                <span className="w-2 h-2 bg-blue-500 rounded-full mr-1"></span>
+                <span className="w-2 h-2 bg-blue-600 rounded-full mr-1"></span>
                 {infoCount} info
               </span>
             )}
             {successCount > 0 && (
               <span className="flex items-center">
-                <span className="w-2 h-2 bg-green-500 rounded-full mr-1"></span>
+                <span className="w-2 h-2 bg-green-600 rounded-full mr-1"></span>
                 {successCount} success
               </span>
             )}
