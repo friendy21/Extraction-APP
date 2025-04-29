@@ -80,6 +80,7 @@ export default function Landing() {
                 <div className="text-center mb-4">
                   <Button
                     className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-md w-full"
+                    onClick={handleGetStarted}
                   >
                     Set up your analytics dashboard in minutes
                   </Button>

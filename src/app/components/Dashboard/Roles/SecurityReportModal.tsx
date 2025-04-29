@@ -8,9 +8,9 @@ interface User {
   role: string;
   status: string;
   twoFA: boolean;
-  lastPasswordChange: number; // days ago
+  lastPasswordChange: number; 
   loginAttempts: number;
-  lastLogin: number; // days ago
+  lastLogin: number; 
   riskScore: number;
 }
 

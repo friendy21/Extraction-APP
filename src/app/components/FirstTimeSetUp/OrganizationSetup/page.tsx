@@ -13,6 +13,8 @@ const OrganizationSetup = () => {
     const [organizationName, setOrganizationName] = useState('');
     const [industry, setIndustry] = useState('');
     const [organizationSize, setOrganizationSize] = useState('');
+    const [country, setCountry] = useState('');
+    const [stateProvince, setStateProvince] = useState('');
     const [showDetails, setShowDetails] = useState(false);
     const [agreedToPolicy, setAgreedToPolicy] = useState(false);
     const [formError, setFormError] = useState('');
@@ -22,9 +24,7 @@ const OrganizationSetup = () => {
     const [phoneNumber, setPhoneNumber] = useState('');
     const [streetAddress, setStreetAddress] = useState('');
     const [city, setCity] = useState('');
-    const [stateProvince, setStateProvince] = useState('');
     const [zipCode, setZipCode] = useState('');
-    const [country, setCountry] = useState('');
 
     // Countries list directly embedded in the component
     const countries = [
@@ -246,6 +246,16 @@ const OrganizationSetup = () => {
             return;
         }
 
+        if (!country) {
+            setFormError('Please select your country');
+            return;
+        }
+
+        if (!stateProvince.trim()) {
+            setFormError('Please enter your state/province');
+            return;
+        }
+
         if (!agreedToPolicy) {
             setFormError('Please agree to the privacy policy and terms of service');
             return;
@@ -256,6 +266,8 @@ const OrganizationSetup = () => {
             organizationName,
             industry,
             organizationSize,
+            country,
+            stateProvince,
             logo,
             // Include additional details if shown
             ...(showDetails && {
@@ -264,9 +276,7 @@ const OrganizationSetup = () => {
                 address: {
                     street: streetAddress,
                     city,
-                    stateProvince,
-                    zipCode,
-                    country
+                    zipCode
                 }
             }),
             agreedToPolicy
@@ -367,6 +377,39 @@ const OrganizationSetup = () => {
                         </div>
 
                         <div>
+                            <label className="text-sm font-medium mb-1.5 block text-gray-700">
+                                Country <span className="text-red-500">*</span>
+                            </label>
+                            <select
+                                value={country}
+                                onChange={(e) => setCountry(e.target.value)}
+                                className="border border-gray-300 rounded-lg p-3 w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm bg-white"
+                                required
+                            >
+                                <option value="">Select Country</option>
+                                {countries.map((country) => (
+                                    <option key={country.code} value={country.code}>
+                                        {country.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="text-sm font-medium mb-1.5 block text-gray-700">
+                                State / Province <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                                type="text"
+                                value={stateProvince}
+                                onChange={(e) => setStateProvince(e.target.value)}
+                                className="border border-gray-300 rounded-lg p-3 w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm"
+                                required
+                                placeholder="Enter state or province"
+                            />
+                        </div>
+
+                        <div>
                             <label className="text-sm font-medium mb-1.5 block text-gray-700">Industry</label>
                             <select
                                 value={industry}
@@ -458,7 +501,7 @@ const OrganizationSetup = () => {
                             <div>
                                 <div className="flex items-center mb-4">
                                     <MapPin className="w-5 h-5 text-blue-700 mr-2" />
-                                    <h3 className="text-md font-semibold text-gray-800">Location Information</h3>
+                                    <h3 className="text-md font-semibold text-gray-800">Additional Location Information</h3>
                                 </div>
 
                                 <div className="grid grid-cols-1 gap-4">
@@ -473,7 +516,7 @@ const OrganizationSetup = () => {
                                         />
                                     </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
                                             <label className="text-sm font-medium mb-1.5 block text-gray-700">City</label>
                                             <input
@@ -482,17 +525,6 @@ const OrganizationSetup = () => {
                                                 onChange={(e) => setCity(e.target.value)}
                                                 className="border border-gray-300 rounded-lg p-3 w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm"
                                                 placeholder="City"
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <label className="text-sm font-medium mb-1.5 block text-gray-700">State / Province</label>
-                                            <input
-                                                type="text"
-                                                value={stateProvince}
-                                                onChange={(e) => setStateProvince(e.target.value)}
-                                                className="border border-gray-300 rounded-lg p-3 w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm"
-                                                placeholder="State"
                                             />
                                         </div>
 
@@ -506,22 +538,6 @@ const OrganizationSetup = () => {
                                                 placeholder="Postal Code"
                                             />
                                         </div>
-                                    </div>
-
-                                    <div>
-                                        <label className="text-sm font-medium mb-1.5 block text-gray-700">Country</label>
-                                        <select
-                                            value={country}
-                                            onChange={(e) => setCountry(e.target.value)}
-                                            className="border border-gray-300 rounded-lg p-3 w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm bg-white"
-                                        >
-                                            <option value="">Select Country</option>
-                                            {countries.map((country) => (
-                                                <option key={country.code} value={country.code}>
-                                                    {country.name}
-                                                </option>
-                                            ))}
-                                        </select>
                                     </div>
                                 </div>
                             </div>
@@ -573,7 +589,7 @@ const OrganizationSetup = () => {
                         <Button 
                             onClick={handleSubmit} 
                             className="bg-blue-700 hover:bg-blue-800 text-white px-6 py-2.5 rounded-md flex items-center space-x-2 transition-colors shadow-md disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-                            disabled={!organizationName.trim() || !agreedToPolicy}
+                            disabled={!organizationName.trim() || !country || !stateProvince.trim() || !agreedToPolicy}
                         >
                             <span>Continue</span>
                             <ArrowRight className="w-4 h-4" />
