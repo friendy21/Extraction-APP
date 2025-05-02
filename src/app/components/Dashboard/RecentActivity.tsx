@@ -423,6 +423,73 @@ const FilterModal: React.FC<{
   );
 };
 
+// Day Activities Popup Component
+const DayActivitiesPopup: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  date: Date;
+  activities: Activity[];
+  expandedActivity: string | null;
+  onToggleExpand: (id: string) => void;
+  onEditActivity?: (activity: Activity) => void;
+  onDeleteActivity?: (id: string) => void;
+  onStatusChange?: (id: string, status: 'pending' | 'in-progress' | 'completed') => void;
+}> = ({ 
+  isOpen, 
+  onClose, 
+  date, 
+  activities, 
+  expandedActivity, 
+  onToggleExpand,
+  onEditActivity,
+  onDeleteActivity,
+  onStatusChange
+}) => {
+  if (!isOpen) return null;
+  
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={onClose}>
+      <div className="bg-white rounded-lg shadow-lg p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-medium">
+            Activities on {date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+          </h3>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        
+        <div className="space-y-2">
+          {activities.length > 0 ? (
+            activities.map(activity => (
+              <ActivityItem 
+                key={activity.id}
+                activity={activity}
+                expandedId={expandedActivity}
+                onToggleExpand={onToggleExpand}
+                onEditActivity={onEditActivity}
+                onDeleteActivity={onDeleteActivity}
+                onStatusChange={onStatusChange}
+              />
+            ))
+          ) : (
+            <p className="text-sm text-gray-500 text-center py-4">No activities for this date matching your filters.</p>
+          )}
+        </div>
+        
+        <div className="mt-6 flex justify-end">
+          <button 
+            onClick={onClose}
+            className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Enhanced Recent Activity Component
 const RecentActivity: React.FC<{ activeUserCount?: number }> = ({ activeUserCount = 0 }) => {
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
@@ -430,6 +497,7 @@ const RecentActivity: React.FC<{ activeUserCount?: number }> = ({ activeUserCoun
   const [expandedActivity, setExpandedActivity] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'calendar' | 'list' | 'analytics'>('calendar');
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [isDayPopupOpen, setIsDayPopupOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterOptions, setFilterOptions] = useState<ActivityFilterOptions>({
     type: [],
@@ -708,6 +776,12 @@ const RecentActivity: React.FC<{ activeUserCount?: number }> = ({ activeUserCoun
     console.log('Update status:', id, status);
   };
 
+  // New handler for day click
+  const handleDayClick = (date: Date) => {
+    setSelectedDate(date);
+    setIsDayPopupOpen(true);
+  };
+
   return (
     <div className="bg-white rounded-lg shadow max-w-4xl mx-auto">
       {/* Header with Month Navigation and View Controls */}
@@ -841,7 +915,7 @@ const RecentActivity: React.FC<{ activeUserCount?: number }> = ({ activeUserCoun
                   } ${day.isToday ? 'bg-blue-50' : ''} ${
                     day.fullDate.toDateString() === selectedDate.toDateString() ? 'bg-blue-100' : ''
                   }`}
-                  onClick={() => setSelectedDate(day.fullDate)}
+                  onClick={() => handleDayClick(day.fullDate)}
                 >
                   <div className={`text-sm font-medium ${
                     day.isCurrentMonth ? '' : 'text-gray-400'
@@ -917,30 +991,6 @@ const RecentActivity: React.FC<{ activeUserCount?: number }> = ({ activeUserCoun
         </div>
       )}
 
-      {/* Activities for Selected Date */}
-      <div className="p-4 border-t">
-        <h3 className="text-lg font-semibold mb-2">
-          Activities on {selectedDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-        </h3>
-        <div className="space-y-2">
-          {selectedActivities.length > 0 ? (
-            selectedActivities.map(activity => (
-              <ActivityItem 
-                key={activity.id}
-                activity={activity}
-                expandedId={expandedActivity}
-                onToggleExpand={toggleExpand}
-                onEditActivity={handleEditActivity}
-                onDeleteActivity={handleDeleteActivity}
-                onStatusChange={handleStatusChange}
-              />
-            ))
-          ) : (
-            <p className="text-sm text-gray-500">No activities for this date matching your filters.</p>
-          )}
-        </div>
-      </div>
-
       {/* Filter Modal */}
       <FilterModal 
         isOpen={isFilterModalOpen}
@@ -948,6 +998,19 @@ const RecentActivity: React.FC<{ activeUserCount?: number }> = ({ activeUserCoun
         filterOptions={filterOptions}
         setFilterOptions={setFilterOptions}
         activityTypes={activityTypes.map(at => at.type)}
+      />
+
+      {/* Day Activities Popup */}
+      <DayActivitiesPopup
+        isOpen={isDayPopupOpen}
+        onClose={() => setIsDayPopupOpen(false)}
+        date={selectedDate}
+        activities={selectedActivities}
+        expandedActivity={expandedActivity}
+        onToggleExpand={toggleExpand}
+        onEditActivity={handleEditActivity}
+        onDeleteActivity={handleDeleteActivity}
+        onStatusChange={handleStatusChange}
       />
     </div>
   );

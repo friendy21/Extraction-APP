@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, Users, Building, MapPin, Home, Search, Filter, CheckSquare, XSquare } from 'lucide-react';
+import { Loader2, Users, Building, MapPin, Home, Search, Filter, CheckSquare, XSquare, Plus } from 'lucide-react';
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Employee, DepartmentDistribution } from '../../../lib/types';
 import { employeeService } from '../../../lib/services/employeeService';
 import { useStep } from '../StepContext';
@@ -11,73 +12,141 @@ import EmployeeDetailModal from './employeeDetailModal';
 import ManageEmployeesModal from './ManageEmployeeModal';
 import AddEmployeeModal from './AddEmployeeModal';
 
+// Constants
 const BREAKPOINT = 768;
 const EMPLOYEES_PER_PAGE = 5;
+const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#6366F1', '#14B8A6'];
 
-// Sub-Components (unchanged implementations for brevity, see original code for details)
-const MetricCard: React.FC<{ icon: React.ReactNode; value: number | string; label: string }> = ({ icon, value, label }) => (
-  <div className="bg-card border border-gray-200 dark:border-gray-700 shadow-md hover:shadow-lg transition-shadow rounded-lg p-4 text-center">
-    <div className="bg-[#2563EB] text-white rounded-full w-10 h-10 md:w-12 md:h-12 flex items-center justify-center mx-auto mb-2">{icon}</div>
-    <div className="font-extrabold text-xl md:text-2xl text-gray-900 dark:text-gray-100">{value}</div>
-    <div className="text-sm text-gray-600 dark:text-gray-400">{label}</div>
+// Sub-Components
+const MetricCard: React.FC<{ icon: React.ReactNode; value: number | string; label: string; delay?: string }> = ({ icon, value, label, delay = '0ms' }) => (
+  <div 
+    className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 shadow-sm hover:shadow-md transition-all transform hover:-translate-y-1 opacity-0 animate-fade-in" 
+    style={{ animationDelay: delay }}
+  >
+    <div className="bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3 shadow-md">{icon}</div>
+    <div className="text-2xl font-bold text-gray-900 dark:text-white text-center">{value}</div>
+    <div className="text-sm text-gray-500 dark:text-gray-400 text-center">{label}</div>
   </div>
 );
 
 const EmployeeMetrics: React.FC<{ employees: Employee[]; departmentDistribution: DepartmentDistribution[]; locationCount: number; remoteWorkers: number }> = ({ employees, departmentDistribution, locationCount, remoteWorkers }) => (
-  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 animate-fadeIn">
-    <MetricCard icon={<Users className="w-5 h-5 md:w-6 md:h-6" />} value={employees.length} label="Total Employees" />
-    <MetricCard icon={<Building className="w-5 h-5 md:w-6 md:h-6" />} value={departmentDistribution.length} label="Departments" />
-    <MetricCard icon={<MapPin className="w-5 h-5 md:w-6 md:h-6" />} value={locationCount} label="Locations" />
-    <MetricCard icon={<Home className="w-5 h-5 md:w-6 md:h-6" />} value={remoteWorkers} label="Remote Workers" />
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 animate-fade-in">
+    <MetricCard icon={<Users className="w-6 h-6" />} value={employees.length} label="Total Employees" />
+    <MetricCard icon={<Building className="w-6 h-6" />} value={departmentDistribution.length} label="Departments" />
+    <MetricCard icon={<MapPin className="w-6 h-6" />} value={locationCount} label="Locations" />
+    <MetricCard icon={<Home className="w-6 h-6" />} value={remoteWorkers} label="Remote Workers" />
   </div>
 );
 
-const DepartmentDistributionSection: React.FC<{ departmentDistribution: DepartmentDistribution[]; totalEmployees: number }> = ({ departmentDistribution, totalEmployees }) => (
-  <div className="bg-card border border-gray-200 dark:border-gray-700 shadow-md hover:shadow-lg transition-shadow rounded-lg p-6 mb-6 animate-fadeIn">
-    <h2 className="text-xl font-semibold text-[#2563EB] dark:text-[#60A5FA] mb-4">Department Distribution</h2>
-    {totalEmployees > 0 && departmentDistribution.length > 0 ? (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {departmentDistribution.map((dept) => (
-          <div key={dept.name} className="flex flex-col group relative">
-            <div className="flex justify-between items-center mb-2">
-              <div className="text-base font-semibold text-gray-800 dark:text-gray-200 truncate pr-2" title={dept.name}>{dept.name}</div>
-              <div className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100 text-xs sm:text-sm font-semibold px-2 py-1 rounded-full">{dept.count} employee{dept.count !== 1 ? 's' : ''}</div>
-            </div>
-            <div className="w-full h-6 bg-gray-200 dark:bg-gray-700 rounded relative overflow-hidden">
-              <div className="h-6 bg-[#2563EB] rounded transition-all duration-500 ease-out" style={{ width: `${(dept.count / totalEmployees) * 100}%` }} title={`${((dept.count / totalEmployees) * 100).toFixed(1)}%`} />
-              <div className="absolute invisible group-hover:visible bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-800 text-xs rounded py-1 px-2 -top-8 left-1/2 transform -translate-x-1/2 whitespace-nowrap z-10">
-                {((dept.count / totalEmployees) * 100).toFixed(1)}%
-              </div>
-            </div>
+const DepartmentDistributionSection: React.FC<{ departmentDistribution: DepartmentDistribution[]; totalEmployees: number }> = ({ departmentDistribution, totalEmployees }) => {
+  const departmentData = departmentDistribution.map((dept, index) => ({
+    ...dept,
+    percentage: ((dept.count / totalEmployees) * 100).toFixed(1),
+    color: COLORS[index % COLORS.length],
+  }));
+
+  return (
+    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow mb-8">
+      <h2 className="text-xl font-semibold text-blue-600 dark:text-blue-400 mb-6">Department Distribution</h2>
+      {totalEmployees > 0 && departmentDistribution.length > 0 ? (
+        <div className="flex flex-col lg:flex-row gap-8">
+          <div className="lg:w-1/2">
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={departmentData}
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={120}
+                  dataKey="count"
+                  nameKey="name"
+                  label={({ name, percentage }) => `${name}: ${percentage}%`}
+                  labelLine={false}
+                >
+                  {departmentData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(value, name) => [`${value} employees (${departmentData.find(d => d.name === name)?.percentage}%)`, name]} />
+                <Legend layout="vertical" verticalAlign="middle" align="right" />
+              </PieChart>
+            </ResponsiveContainer>
           </div>
-        ))}
-      </div>
-    ) : (
-      <p className="text-gray-500 dark:text-gray-400">No department data available yet.</p>
-    )}
-  </div>
-);
+          <div className="lg:w-1/2 overflow-x-auto">
+            <table className="w-full text-sm text-gray-700 dark:text-gray-300">
+              <thead className="bg-gray-100 dark:bg-gray-700 text-xs uppercase text-gray-600 dark:text-gray-400">
+                <tr>
+                  <th className="px-4 py-3 text-left">Department</th>
+                  <th className="px-4 py-3 text-left">Employees</th>
+                  <th className="px-4 py-3 text-left">Percentage</th>
+                </tr>
+              </thead>
+              <tbody>
+                {departmentData.map((dept) => (
+                  <tr key={dept.name} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    <td className="px-4 py-3 flex items-center">
+                      <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: dept.color }}></div>
+                      {dept.name}
+                    </td>
+                    <td className="px-4 py-3">{dept.count}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center">
+                        <div className="w-20 bg-gray-200 dark:bg-gray-600 rounded-full h-2 mr-2">
+                          <div className="h-2 rounded-full" style={{ width: `${dept.percentage}%`, backgroundColor: dept.color }}></div>
+                        </div>
+                        {dept.percentage}%
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : (
+        <p className="text-gray-500 dark:text-gray-400">No department data available.</p>
+      )}
+    </div>
+  );
+};
 
 const SearchAndFilterBar: React.FC<{ searchTerm: string; setSearchTerm: (term: string) => void; selectedDepartment: string; setSelectedDepartment: (dept: string) => void; selectedStatus: string; setSelectedStatus: (status: string) => void; departments: string[] }> = ({ searchTerm, setSearchTerm, selectedDepartment, setSelectedDepartment, selectedStatus, setSelectedStatus, departments }) => (
-  <div className="flex flex-col md:flex-row gap-2 mb-4">
-    <div className="relative flex-grow">
-      <Search className="absolute inset-y-0 left-0 pl-3 h-5 w-5 text-gray-400" />
-      <input type="text" placeholder="Search by name, email, position..." className="pl-10 pr-4 py-2 w-full border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} aria-label="Search employees" />
+  <div className="flex flex-col md:flex-row gap-4 mb-6">
+    <div className="relative flex-1">
+      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+      <input
+        type="text"
+        placeholder="Search by name, email, position..."
+        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white transition-all"
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        aria-label="Search employees"
+      />
     </div>
-    <div className="flex flex-col sm:flex-row gap-2">
+    <div className="flex flex-col sm:flex-row gap-4">
       <div className="relative flex-1">
-        <select className="appearance-none pl-3 pr-10 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" value={selectedDepartment} onChange={(e) => setSelectedDepartment(e.target.value)} aria-label="Filter by department">
+        <select
+          className="w-full pl-3 pr-10 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white appearance-none"
+          value={selectedDepartment}
+          onChange={(e) => setSelectedDepartment(e.target.value)}
+          aria-label="Filter by department"
+        >
           {departments.map(dept => <option key={dept} value={dept}>{dept === 'All' ? 'All Departments' : dept}</option>)}
         </select>
-        <Filter className="absolute inset-y-0 right-0 pr-3 h-4 w-4 text-gray-400" />
+        <Filter className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
       </div>
       <div className="relative flex-1">
-        <select className="appearance-none pl-3 pr-10 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full" value={selectedStatus} onChange={(e) => setSelectedStatus(e.target.value)} aria-label="Filter by status">
+        <select
+          className="w-full pl-3 pr-10 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white appearance-none"
+          value={selectedStatus}
+          onChange={(e) => setSelectedStatus(e.target.value)}
+          aria-label="Filter by status"
+        >
           <option value="All">All Status</option>
           <option value="Included">Included</option>
           <option value="Excluded">Excluded</option>
         </select>
-        <Filter className="absolute inset-y-0 right-0 pr-3 h-4 w-4 text-gray-400" />
+        <Filter className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
       </div>
     </div>
   </div>
@@ -85,23 +154,25 @@ const SearchAndFilterBar: React.FC<{ searchTerm: string; setSearchTerm: (term: s
 
 const BulkActions: React.FC<{ selectedCount: number; handleBulkInclude: () => void; handleBulkExclude: () => void }> = ({ selectedCount, handleBulkInclude, handleBulkExclude }) => (
   selectedCount > 0 ? (
-    <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900 rounded-lg flex flex-col sm:flex-row justify-between items-center gap-2">
-      <div className="text-blue-700 dark:text-blue-100 font-medium">{selectedCount} employee{selectedCount > 1 ? 's' : ''} selected</div>
-      <div className="flex gap-2 flex-wrap justify-center">
-        <button onClick={handleBulkInclude} className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded flex items-center text-sm transition-colors"><CheckSquare className="h-4 w-4 mr-1" /> Include Selected</button>
-        <button onClick={handleBulkExclude} className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded flex items-center text-sm transition-colors"><XSquare className="h-4 w-4 mr-1" /> Exclude Selected</button>
+    <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900 rounded-lg flex flex-col sm:flex-row justify-between items-center gap-4 animate-slide-in">
+      <span className="text-blue-700 dark:text-blue-200 font-medium">{selectedCount} employee{selectedCount > 1 ? 's' : ''} selected</span>
+      <div className="flex gap-3">
+        <button onClick={handleBulkInclude} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all"><CheckSquare className="h-4 w-4" /> Include</button>
+        <button onClick={handleBulkExclude} className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all"><XSquare className="h-4 w-4" /> Exclude</button>
       </div>
     </div>
   ) : null
 );
 
 const PaginationControls: React.FC<{ currentPage: number; totalPages: number; handlePreviousPage: () => void; handleNextPage: () => void; startEntry: number; endEntry: number; totalFilteredEntries: number }> = ({ currentPage, totalPages, handlePreviousPage, handleNextPage, startEntry, endEntry, totalFilteredEntries }) => (
-  <div className="flex flex-col md:flex-row justify-between items-center mt-4 gap-2">
-    <div className="text-sm text-gray-500 dark:text-gray-400">{totalFilteredEntries > 0 ? `Showing ${startEntry} to ${endEntry} of ${totalFilteredEntries} entries` : 'No entries to show'}</div>
-    <div className="flex items-center space-x-2">
-      <button onClick={handlePreviousPage} disabled={currentPage === 1} className={`border border-[#2563EB] text-[#2563EB] px-4 py-2 rounded-lg hover:bg-blue-50 dark:hover:bg-gray-800 transition-colors ${currentPage === 1 ? 'opacity-50 cursor-not-allowed' : ''}`} aria-label="Previous page">Previous</button>
-      <span className="text-gray-600 dark:text-gray-400 font-medium px-2" aria-live="polite">Page {currentPage} of {totalPages || 1}</span>
-      <button onClick={handleNextPage} disabled={currentPage === totalPages || totalPages === 0} className={`bg-[#2563EB] text-white px-4 py-2 rounded-lg hover:bg-[#1D4ED8] transition-colors ${currentPage === totalPages || totalPages === 0 ? 'opacity-50 cursor-not-allowed' : ''}`} aria-label="Next page">Next</button>
+  <div className="flex flex-col md:flex-row justify-between items-center mt-6 gap-4">
+    <span className="text-sm text-gray-600 dark:text-gray-400">
+      {totalFilteredEntries > 0 ? `Showing ${startEntry} to ${endEntry} of ${totalFilteredEntries} entries` : 'No entries to show'}
+    </span>
+    <div className="flex items-center gap-3">
+      <button onClick={handlePreviousPage} disabled={currentPage === 1} className="px-4 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 dark:hover:bg-gray-700 disabled:opacity-50 transition-all" aria-label="Previous page">Previous</button>
+      <span className="text-gray-700 dark:text-gray-300 font-medium">Page {currentPage} of {totalPages || 1}</span>
+      <button onClick={handleNextPage} disabled={currentPage === totalPages || totalPages === 0} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-all" aria-label="Next page">Next</button>
     </div>
   </div>
 );
@@ -118,58 +189,86 @@ interface EmployeeTableProps {
 }
 
 const EmployeeTable: React.FC<EmployeeTableProps> = ({ employees, isMobile, selectedEmployees, onToggleSelection, onToggleStatus, onViewDetails, selectAll, onSelectAllChange }) => (
-  <div className="overflow-x-auto shadow-inner rounded-lg border border-gray-200 dark:border-gray-700">
-    <table className={`w-full ${isMobile ? 'min-w-[450px]' : ''}`}>
-      <thead className="bg-gray-100 dark:bg-gray-800 sticky top-0 z-10">
-        <tr>
-          <th className="p-2 md:p-3 w-12 text-center"><input type="checkbox" checked={selectAll} onChange={(e) => onSelectAllChange(e.target.checked)} className="form-checkbox h-4 w-4 text-blue-600" aria-label="Select all on page" /></th>
-          <th className="p-2 md:p-3 text-left text-xs sm:text-sm text-gray-600 dark:text-gray-300 font-semibold uppercase tracking-wider">Name</th>
-          {!isMobile && <th className="p-3 text-left text-xs sm:text-sm text-gray-600 dark:text-gray-300 font-semibold uppercase tracking-wider">Email</th>}
-          {!isMobile && <th className="p-3 text-left text-xs sm:text-sm text-gray-600 dark:text-gray-300 font-semibold uppercase tracking-wider">Department</th>}
-          {!isMobile && <th className="p-3 text-left text-xs sm:text-sm text-gray-600 dark:text-gray-300 font-semibold uppercase tracking-wider">Position</th>}
-          {isMobile && <th className="p-2 text-left text-xs sm:text-sm text-gray-600 dark:text-gray-300 font-semibold uppercase tracking-wider">Dept. & Pos.</th>}
-          <th className="p-2 md:p-3 text-left text-xs sm:text-sm text-gray-600 dark:text-gray-300 font-semibold uppercase tracking-wider">Status</th>
-          {!isMobile && <th className="p-3 text-left text-xs sm:text-sm text-gray-600 dark:text-gray-300 font-semibold uppercase tracking-wider">Actions</th>}
-        </tr>
-      </thead>
-      <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-        {employees.map((employee) => (
-          <tr key={employee.id} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-            <td className="p-2 md:p-3 text-center align-middle"><input type="checkbox" checked={selectedEmployees.includes(employee.id)} onChange={() => onToggleSelection(employee.id)} className="form-checkbox h-4 w-4 text-blue-600" /></td>
-            <td className="p-2 md:p-3 align-middle">
-              <div className="flex items-center space-x-2 md:space-x-3">
-                {employee.profilePicture ? <img src={employee.profilePicture} alt={`${employee.name}'s profile`} className="w-8 h-8 md:w-10 md:h-10 rounded-full object-cover shrink-0" loading="lazy" onError={(e) => (e.currentTarget.style.display = 'none')} /> : <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-[#4f46e5] text-white flex items-center justify-center font-bold text-xs md:text-sm shrink-0">{employee.name?.split(' ').map(n => n[0]).join('').toUpperCase() || '?'}</div>}
-                <div className="flex flex-col overflow-hidden">
-                  <button onClick={() => onViewDetails(employee)} className="hover:underline text-left font-medium text-sm text-gray-900 dark:text-gray-100 truncate" title={employee.name}>{employee.name || 'N/A'}</button>
-                  {isMobile && <span className="text-xs text-gray-500 dark:text-gray-400 truncate" title={employee.email}>{employee.email || 'No Email'}</span>}
-                </div>
+  isMobile ? (
+    <div className="space-y-4">
+      {employees.map((employee) => (
+        <div key={employee.id} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 shadow-sm hover:shadow-md transition-all">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <input type="checkbox" checked={selectedEmployees.includes(employee.id)} onChange={() => onToggleSelection(employee.id)} className="h-4 w-4 text-blue-600" />
+              {employee.profilePicture ? (
+                <img src={employee.profilePicture} alt={`${employee.name}'s profile`} className="w-10 h-10 rounded-full object-cover" loading="lazy" />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold">{employee.name?.split(' ').map(n => n[0]).join('').toUpperCase() || '?'}</div>
+              )}
+              <div>
+                <button onClick={() => onViewDetails(employee)} className="text-sm font-medium text-gray-900 dark:text-white hover:underline">{employee.name || 'N/A'}</button>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{employee.email || 'No Email'}</p>
+                <p className="text-xs text-gray-600 dark:text-gray-300">{employee.department} - {employee.position}</p>
               </div>
-            </td>
-            {!isMobile && (
-              <>
-                <td className="p-3 text-sm text-gray-600 dark:text-gray-300 truncate max-w-[200px] align-middle" title={employee.email}>{employee.email || '-'}</td>
-                <td className="p-3 text-sm text-gray-600 dark:text-gray-300 truncate max-w-[150px] align-middle" title={employee.department}>{employee.department || '-'}</td>
-                <td className="p-3 text-sm text-gray-600 dark:text-gray-300 truncate max-w-[150px] align-middle" title={employee.position}>{employee.position || '-'}</td>
-              </>
-            )}
-            {isMobile && (
-              <td className="p-2 align-middle">
-                <div className="flex flex-col text-left overflow-hidden">
-                  <span className="text-xs text-gray-600 dark:text-gray-400 truncate" title={employee.department}>{employee.department || 'No Dept.'}</span>
-                  <span className="font-medium text-xs text-gray-800 dark:text-gray-200 truncate" title={employee.position}>{employee.position || 'No Pos.'}</span>
-                </div>
-              </td>
-            )}
-            <td className="p-2 md:p-3 align-middle">
-              <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium cursor-pointer ${employee.status === 'Included' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`} onClick={() => onToggleStatus(employee.id)} title={`Click to toggle to ${employee.status === 'Included' ? 'Excluded' : 'Included'}`} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onToggleStatus(employee.id); }}>{employee.status}</span>
-            </td>
-            {!isMobile && <td className="p-3 align-middle"><button onClick={() => onViewDetails(employee)} className="text-[#2563EB] hover:text-[#1D4ED8] font-medium text-sm">View Details</button></td>}
+            </div>
+            <span
+              className={`px-2.5 py-1 rounded-full text-xs font-medium cursor-pointer ${employee.status === 'Included' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
+              onClick={() => onToggleStatus(employee.id)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onToggleStatus(employee.id); }}
+            >
+              {employee.status}
+            </span>
+          </div>
+        </div>
+      ))}
+      {employees.length === 0 && <div className="p-4 text-center text-gray-500 dark:text-gray-400">No employees found.</div>}
+    </div>
+  ) : (
+    <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+      <table className="w-full text-sm text-gray-700 dark:text-gray-300">
+        <thead className="bg-gray-100 dark:bg-gray-700 text-xs uppercase text-gray-600 dark:text-gray-400">
+          <tr>
+            <th className="p-4 text-center"><input type="checkbox" checked={selectAll} onChange={(e) => onSelectAllChange(e.target.checked)} className="h-4 w-4 text-blue-600" aria-label="Select all" /></th>
+            <th className="p-4 text-left">Name</th>
+            <th className="p-4 text-left">Email</th>
+            <th className="p-4 text-left">Department</th>
+            <th className="p-4 text-left">Position</th>
+            <th className="p-4 text-left">Status</th>
+            <th className="p-4 text-left">Actions</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
-    {employees.length === 0 && <div className="p-4 text-center text-gray-500 dark:text-gray-400">No employees found.</div>}
-  </div>
+        </thead>
+        <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+          {employees.map((employee) => (
+            <tr key={employee.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+              <td className="p-4 text-center"><input type="checkbox" checked={selectedEmployees.includes(employee.id)} onChange={() => onToggleSelection(employee.id)} className="h-4 w-4 text-blue-600" /></td>
+              <td className="p-4 flex items-center gap-3">
+                {employee.profilePicture ? (
+                  <img src={employee.profilePicture} alt={`${employee.name}'s profile`} className="w-10 h-10 rounded-full object-cover" loading="lazy" />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold">{employee.name?.split(' ').map(n => n[0]).join('').toUpperCase() || '?'}</div>
+                )}
+                <button onClick={() => onViewDetails(employee)} className="font-medium text-gray-900 dark:text-white hover:underline">{employee.name || 'N/A'}</button>
+              </td>
+              <td className="p-4 truncate max-w-[200px]">{employee.email || '-'}</td>
+              <td className="p-4 truncate max-w-[150px]">{employee.department || '-'}</td>
+              <td className="p-4 truncate max-w-[150px]">{employee.position || '-'}</td>
+              <td className="p-4">
+                <span
+                  className={`px-2.5 py-1 rounded-full text-xs font-medium cursor-pointer ${employee.status === 'Included' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
+                  onClick={() => onToggleStatus(employee.id)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onToggleStatus(employee.id); }}
+                >
+                  {employee.status}
+                </span>
+              </td>
+              <td className="p-4"><button onClick={() => onViewDetails(employee)} className="text-blue-600 hover:text-blue-800 font-medium">View Details</button></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {employees.length === 0 && <div className="p-4 text-center text-gray-500 dark:text-gray-400">No employees found.</div>}
+    </div>
+  )
 );
 
 // Main Component
@@ -235,7 +334,7 @@ const EmployeePage: React.FC = () => {
         setLocationCount(loc);
         setRemoteWorkers(rem);
       } catch (error) {
-        setErrorMessage('Failed to load employee data. Please try again.');
+        setErrorMessage('Failed to load employee data.');
         console.error(error);
       }
     };
@@ -285,7 +384,6 @@ const EmployeePage: React.FC = () => {
       setDepartmentDistribution(dist);
       setLocationCount(loc);
       setRemoteWorkers(rem);
-      setTotalDiscoveredEmployees(emps.length);
     } catch (error) {
       setErrorMessage('Failed to refresh data.');
       console.error(error);
@@ -330,27 +428,45 @@ const EmployeePage: React.FC = () => {
       {selectedEmployee && <EmployeeDetailModal isOpen={!!selectedEmployee} onClose={() => setSelectedEmployee(null)} employee={selectedEmployee} onStatusChange={refreshEmployeeData} />}
       {isManageModalOpen && <ManageEmployeesModal isOpen={isManageModalOpen} onClose={() => setIsManageModalOpen(false)} onEmployeeStatusChange={refreshEmployeeData} />}
       {isAddEmployeeModalOpen && <AddEmployeeModal isOpen={isAddEmployeeModalOpen} onClose={() => setIsAddEmployeeModalOpen(false)} onEmployeeAdded={refreshEmployeeData} />}
-      <div className="p-4 md:p-6 max-w-7xl mx-auto">
-        <h1 className="text-2xl md:text-3xl font-extrabold mb-2 text-[#2563EB] dark:text-[#93c5fd]">Employee Discovery</h1>
-        <p className="text-gray-600 dark:text-gray-400 mb-6">Discover employees from connected platforms or add them manually.</p>
-        {errorMessage && <div className="mb-4 p-3 bg-red-100 dark:bg-red-900 border-l-4 border-red-500 text-red-700 dark:text-red-200" role="alert"><p className="font-semibold">Error</p><p>{errorMessage}</p></div>}
-        <div className="bg-card border border-gray-200 dark:border-gray-700 shadow-md hover:shadow-lg transition-shadow rounded-lg p-4 md:p-6 mb-6">
-          <div className="flex flex-col md:flex-row justify-between md:items-center mb-4 gap-4">
+      <div className="p-6 max-w-7xl mx-auto space-y-8">
+        <header className="space-y-2">
+          <h1 className="text-3xl font-bold text-blue-600 dark:text-blue-400">Employee Discovery</h1>
+          <p className="text-gray-600 dark:text-gray-400">Manage and explore your employee data with ease.</p>
+        </header>
+
+        {errorMessage && (
+          <div className="p-4 bg-red-50 dark:bg-red-900 border-l-4 border-red-500 text-red-700 dark:text-red-200 rounded-lg animate-slide-in" role="alert">
+            <p className="font-semibold">Error</p>
+            <p>{errorMessage}</p>
+          </div>
+        )}
+
+        <section className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
-              <h2 className="text-xl font-semibold text-[#2563EB] dark:text-[#60A5FA]">Discover Employees</h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Run discovery to fetch employees from connected platforms.</p>
+              <h2 className="text-xl font-semibold text-blue-600 dark:text-blue-400">Discover Employees</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Fetch employees from connected platforms.</p>
             </div>
-            <button onClick={runDiscovery} disabled={isLoading} className={`bg-[#2563EB] text-white px-5 py-2.5 md:px-6 md:py-3 rounded-lg font-semibold flex items-center justify-center ${isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[#1D4ED8]'}`}>
-              {isLoading ? <><Loader2 className="mr-2 h-5 w-5 animate-spin" />Running...</> : 'Run Discovery'}
+            <button
+              onClick={runDiscovery}
+              disabled={isLoading}
+              className="bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2 transition-all"
+            >
+              {isLoading ? <><Loader2 className="h-5 w-5 animate-spin" /> Running...</> : 'Run Discovery'}
             </button>
           </div>
-          {isLoading && <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900 rounded-lg text-blue-700 dark:text-blue-100 flex items-center animate-pulse"><Loader2 className="mr-2 h-5 w-5 animate-spin" />Discovery in progress...</div>}
-          {isDiscoveryComplete && !isLoading && (
-            <div className={`mt-4 p-3 rounded-lg flex items-center text-sm ${totalDiscoveredEmployees > 0 ? 'bg-green-50 dark:bg-green-900 text-green-700 dark:text-green-100' : 'bg-yellow-50 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-100'}`}>
-              {totalDiscoveredEmployees > 0 ? <><CheckSquare className="w-5 h-5 mr-2" />Discovery complete! Found {totalDiscoveredEmployees} employee{totalDiscoveredEmployees !== 1 ? 's' : ''}.</> : <><Users className="w-5 h-5 mr-2" />No employees found. Add manually below.</>}
+          {isLoading && (
+            <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900 rounded-lg text-blue-700 dark:text-blue-200 flex items-center animate-pulse">
+              <Loader2 className="h-5 w-5 animate-spin mr-2" /> Discovery in progress...
             </div>
           )}
-        </div>
+          {isDiscoveryComplete && !isLoading && (
+            <div className={`mt-4 p-4 rounded-lg flex items-center text-sm ${totalDiscoveredEmployees > 0 ? 'bg-green-50 dark:bg-green-900 text-green-700 dark:text-green-100' : 'bg-yellow-50 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-100'} animate-slide-in`}>
+              {totalDiscoveredEmployees > 0 ? <><CheckSquare className="h-5 w-5 mr-2" /> Discovery complete! Found {totalDiscoveredEmployees} employee{totalDiscoveredEmployees !== 1 ? 's' : ''}.</> : <><Users className="h-5 w-5 mr-2" /> No employees found. Add manually below.</>}
+            </div>
+          )}
+        </section>
+
         {isDiscoveryComplete && !isLoading && (
           <>
             {employees.length > 0 && (
@@ -359,30 +475,58 @@ const EmployeePage: React.FC = () => {
                 <DepartmentDistributionSection departmentDistribution={departmentDistribution} totalEmployees={employees.length} />
               </>
             )}
-            <div className="mt-8">
-              <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-4 gap-3">
-                <h2 className="text-xl md:text-2xl font-semibold text-[#2563EB] dark:text-[#60A5FA]">Manage Employee List</h2>
-                <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
-                  <button className="bg-white border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center gap-2 text-sm" onClick={() => setIsManageModalOpen(true)}><Users className="w-4 h-4" />Manage All</button>
-                  <button className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2 text-sm" onClick={() => setIsAddEmployeeModalOpen(true)}><Users className="w-4 h-4" />Add Employee</button>
+            <section className="space-y-6">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <h2 className="text-2xl font-semibold text-blue-600 dark:text-blue-400">Manage Employee List</h2>
+                <div className="flex gap-3">
+                  <button className="border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center gap-2 transition-all" onClick={() => setIsManageModalOpen(true)}>
+                    <Users className="h-4 w-4" /> Manage All
+                  </button>
+                  <button className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2 transition-all" onClick={() => setIsAddEmployeeModalOpen(true)}>
+                    <Plus className="h-4 w-4" /> Add Employee
+                  </button>
                 </div>
               </div>
-              <div className="bg-card border border-gray-200 dark:border-gray-700 shadow-md hover:shadow-lg transition-shadow rounded-lg p-4 md:p-6">
+              <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
                 <SearchAndFilterBar searchTerm={searchTerm} setSearchTerm={setSearchTerm} selectedDepartment={selectedDepartment} setSelectedDepartment={setSelectedDepartment} selectedStatus={selectedStatus} setSelectedStatus={setSelectedStatus} departments={departments} />
                 <BulkActions selectedCount={selectedEmployees.length} handleBulkInclude={handleBulkInclude} handleBulkExclude={handleBulkExclude} />
                 <EmployeeTable employees={paginatedEmployees} isMobile={isMobile} selectedEmployees={selectedEmployees} onToggleSelection={handleToggleSelection} onToggleStatus={handleToggleStatus} onViewDetails={setSelectedEmployee} selectAll={selectAllOnPage} onSelectAllChange={handleSelectAllOnPage} />
                 <PaginationControls currentPage={currentPage} totalPages={totalPages} handlePreviousPage={handlePreviousPage} handleNextPage={handleNextPage} startEntry={startEntry} endEntry={endEntry} totalFilteredEntries={filteredEmployees.length} />
               </div>
-            </div>
+            </section>
           </>
         )}
-        <div className="flex justify-between mt-8 mb-6">
-          <Button onClick={handleBack} variant="outline" className="border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 py-2 px-6 rounded-md">Previous</Button>
-          <Button onClick={handleNext} disabled={!isDiscoveryComplete} title={!isDiscoveryComplete ? "Run discovery first" : "Proceed to Data Setup"} className={`py-2 px-6 rounded-md ${isDiscoveryComplete ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}>Next</Button>
-        </div>
+
+        <footer className="flex justify-between mt-8">
+          <Button onClick={handleBack} variant="outline" className="border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 px-6 py-2 rounded-lg transition-all">Previous</Button>
+          <Button onClick={handleNext} disabled={!isDiscoveryComplete} className={`px-6 py-2 rounded-lg ${isDiscoveryComplete ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'} transition-all`}>Next</Button>
+        </footer>
       </div>
     </>
   );
 };
+
+// Custom animations
+const styles = `
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+  }
+  .animate-slide-in {
+    animation: slideIn 0.5s ease-in-out;
+  }
+`;
+if (typeof document !== 'undefined') {
+  const styleSheet = document.createElement('style');
+  styleSheet.textContent = styles;
+  document.head.appendChild(styleSheet);
+}
 
 export default EmployeePage;

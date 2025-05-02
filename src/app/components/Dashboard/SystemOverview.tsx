@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback, useEffect } from 'react';
 import { Alert } from './ImportantAlerts';
+import { ArrowDown, ArrowUp, AlertTriangle, Zap, Clock, Users, Server, RefreshCw, Database, Shield } from 'lucide-react';
 
 // User and Session types
 interface User {
@@ -21,6 +22,17 @@ interface Session {
   ipAddress: string;
   status: string;
   duration: string;
+}
+
+// System metrics interface
+interface SystemMetrics {
+  cpuUsage: number;
+  memoryUsage: number;
+  diskUsage: number;
+  apiResponseTime: number;
+  dbQueryTime: number;
+  analyticsProcessingTime: number;
+  authServiceTime: number;
 }
 
 // Props for SystemOverview component
@@ -44,7 +56,7 @@ const Modal: React.FC<{
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-lg w-full max-w-4xl mx-4">
+      <div className="bg-white rounded-lg shadow-lg w-full max-w-4xl mx-4 max-h-[90vh] flex flex-col">
         <div className="flex justify-between items-center p-4 border-b">
           <h2 className="text-lg font-semibold">{title}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
@@ -53,7 +65,7 @@ const Modal: React.FC<{
             </svg>
           </button>
         </div>
-        <div className="p-4">
+        <div className="p-4 overflow-y-auto flex-grow">
           {children}
         </div>
       </div>
@@ -61,143 +73,7 @@ const Modal: React.FC<{
   );
 };
 
-// System Health Modal Content
-const SystemHealthContent: React.FC<{ 
-  onHealthCheck: () => void;
-  addAlert: (alert: Alert) => void;
-}> = ({ onHealthCheck, addAlert }) => {
-  const [isCheckingHealth, setIsCheckingHealth] = useState(false);
-  
-  const runHealthCheck = () => {
-    setIsCheckingHealth(true);
-    
-    // Simulate health check
-    setTimeout(() => {
-      setIsCheckingHealth(false);
-      onHealthCheck();
-      
-      // Add alert about health check
-      addAlert({
-        id: `health-check-${Date.now()}`,
-        type: 'success',
-        title: 'System health check completed',
-        description: 'All systems are operating normally',
-        action: { 
-          text: "View Details", 
-          onClick: () => console.log('View health check details') 
-        },
-        details: 'A comprehensive system health check has been completed. All components are functioning properly: Core API (123ms), Database (215ms), Analytics Engine (789ms), Authentication Service (65ms).'
-      });
-    }, 2000);
-  };
-  
-  return (
-    <div>
-      <p className="text-sm text-gray-600 mb-4">Current status and health metrics for all Glynac system components.</p>
-      
-      <div className="bg-green-50 p-4 rounded-lg flex items-center mb-6">
-        <div className="bg-green-500 rounded-full p-2 mr-4">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-          </svg>
-        </div>
-        <div className="flex-1">
-          <h3 className="font-medium">All Systems Operational</h3>
-          <p className="text-sm text-gray-600">Last checked: Today at 11:42 AM</p>
-        </div>
-        <button 
-          onClick={runHealthCheck}
-          disabled={isCheckingHealth}
-          className={`px-3 py-1 rounded-md text-sm ${
-            isCheckingHealth 
-              ? 'bg-gray-100 text-gray-500 cursor-not-allowed' 
-              : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
-          }`}
-        >
-          {isCheckingHealth ? 'Checking...' : 'Run Health Check'}
-        </button>
-      </div>
-      
-      <h3 className="font-medium mb-4">Component Status</h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <div className="border rounded-lg p-4">
-          <div className="flex justify-between mb-2">
-            <h4 className="font-medium">Core API</h4>
-            <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">Operational</span>
-          </div>
-          <p className="text-sm text-gray-600 mb-1">Response Time</p>
-          <div className="w-full bg-gray-200 rounded-full h-2.5 mb-1">
-            <div className="bg-green-500 h-2.5 rounded-full w-1/5"></div>
-          </div>
-          <p className="text-xs text-gray-500 text-right">123ms</p>
-        </div>
-        
-        <div className="border rounded-lg p-4">
-          <div className="flex justify-between mb-2">
-            <h4 className="font-medium">Database</h4>
-            <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">Operational</span>
-          </div>
-          <p className="text-sm text-gray-600 mb-1">Query Performance</p>
-          <div className="w-full bg-gray-200 rounded-full h-2.5 mb-1">
-            <div className="bg-green-500 h-2.5 rounded-full w-1/4"></div>
-          </div>
-          <p className="text-xs text-gray-500 text-right">215ms</p>
-        </div>
-        
-        <div className="border rounded-lg p-4">
-          <div className="flex justify-between mb-2">
-            <h4 className="font-medium">Analytics Engine</h4>
-            <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">Operational</span>
-          </div>
-          <p className="text-sm text-gray-600 mb-1">Processing Speed</p>
-          <div className="w-full bg-gray-200 rounded-full h-2.5 mb-1">
-            <div className="bg-green-500 h-2.5 rounded-full w-3/4"></div>
-          </div>
-          <p className="text-xs text-gray-500 text-right">789ms</p>
-        </div>
-        
-        <div className="border rounded-lg p-4">
-          <div className="flex justify-between mb-2">
-            <h4 className="font-medium">Authentication Service</h4>
-            <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">Operational</span>
-          </div>
-          <p className="text-sm text-gray-600 mb-1">Response Time</p>
-          <div className="w-full bg-gray-200 rounded-full h-2.5 mb-1">
-            <div className="bg-green-500 h-2.5 rounded-full w-1/6"></div>
-          </div>
-          <p className="text-xs text-gray-500 text-right">65ms</p>
-        </div>
-      </div>
-      
-      <h3 className="font-medium mb-4">System Resources</h3>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="border rounded-lg p-4">
-          <h4 className="text-sm text-gray-600 mb-2">CPU Usage</h4>
-          <p className="text-2xl font-semibold mb-2">32%</p>
-          <div className="w-full bg-gray-200 rounded-full h-2.5">
-            <div className="bg-blue-500 h-2.5 rounded-full w-1/3"></div>
-          </div>
-        </div>
-        
-        <div className="border rounded-lg p-4">
-          <h4 className="text-sm text-gray-600 mb-2">Memory Usage</h4>
-          <p className="text-2xl font-semibold mb-2">48%</p>
-          <div className="w-full bg-gray-200 rounded-full h-2.5">
-            <div className="bg-blue-500 h-2.5 rounded-full w-1/2"></div>
-          </div>
-        </div>
-        
-        <div className="border rounded-lg p-4">
-          <h4 className="text-sm text-gray-600 mb-2">Disk Usage</h4>
-          <p className="text-2xl font-semibold mb-2">75%</p>
-          <div className="w-full bg-gray-200 rounded-full h-2.5">
-            <div className="bg-yellow-500 h-2.5 rounded-full w-3/4"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
+
 
 // Data Sync History Modal Content
 const DataSyncContent: React.FC<{
@@ -263,6 +139,8 @@ const DataSyncContent: React.FC<{
 
   // State for sync running
   const [isSyncing, setIsSyncing] = useState(false);
+  const [syncProgress, setSyncProgress] = useState(0);
+  const [syncSources, setSyncSources] = useState<string[]>([]);
   
   // Apply filters and get filtered data
   const getFilteredData = useCallback(() => {
@@ -332,24 +210,35 @@ const DataSyncContent: React.FC<{
   // Function to run manual sync
   const runManualSync = () => {
     setIsSyncing(true);
+    setSyncProgress(0);
+    setSyncSources(['Google Workspace', 'Microsoft 365', 'Slack', 'Zoom']);
 
-    // Simulate sync operation
-    setTimeout(() => {
-      setIsSyncing(false);
-
-      // Add alert about successful sync
-      addAlert({
-        id: `sync-${Date.now()}`,
-        type: 'success',
-        title: 'Manual data sync completed',
-        description: 'All data sources synced successfully',
-        action: { 
-          text: "View", 
-          onClick: () => console.log('View sync details') 
-        },
-        details: 'Manual data synchronization from all sources has completed. 48,624 records were processed across 4 connected platforms.'
+    // Simulate sync operation with progress updates
+    const interval = setInterval(() => {
+      setSyncProgress(prev => {
+        if (prev >= 100) {
+          clearInterval(interval);
+          setIsSyncing(false);
+          
+          // Add alert about successful sync
+          addAlert({
+            id: `sync-${Date.now()}`,
+            type: 'success',
+            title: 'Manual data sync completed',
+            description: 'All data sources synced successfully',
+            action: { 
+              text: "View", 
+              onClick: () => console.log('View sync details') 
+            },
+            details: 'Manual data synchronization from all sources has completed. 48,624 records were processed across 4 connected platforms.'
+          });
+          
+          return 0;
+        }
+        
+        return prev + 5;
       });
-    }, 3000);
+    }, 150);
   };
   
   // Reset to first page when filters change
@@ -364,15 +253,65 @@ const DataSyncContent: React.FC<{
         <button 
           onClick={runManualSync}
           disabled={isSyncing}
-          className={`px-3 py-1 rounded-md text-sm ${
+                        className={`px-4 py-2 rounded-md text-sm flex items-center ${
             isSyncing 
               ? 'bg-gray-100 text-gray-500 cursor-not-allowed' 
               : 'bg-blue-600 text-white hover:bg-blue-700'
           }`}
         >
-          {isSyncing ? 'Syncing...' : 'Run Manual Sync'}
+          {isSyncing ? (
+            <>
+              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Syncing...
+            </>
+          ) : (
+            <>
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Run Manual Sync
+            </>
+          )}
         </button>
       </div>
+      
+      {isSyncing && (
+        <div className="mb-6 bg-blue-50 p-4 rounded-lg">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="font-medium">Syncing Data</h3>
+            <span className="text-sm font-medium">{syncProgress}%</span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-2.5 mb-3">
+            <div 
+              className="bg-blue-600 h-2.5 rounded-full transition-all duration-300" 
+              style={{ width: `${syncProgress}%` }}
+            ></div>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            {syncSources.map((source, index) => (
+              <div 
+                key={source} 
+                className={`text-xs p-2 rounded-lg flex items-center ${
+                  syncProgress > (index + 1) * 25 ? 'bg-green-100 text-green-800' : 'bg-gray-100'
+                }`}
+              >
+                {syncProgress > (index + 1) * 25 ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : (
+                  <svg className="animate-spin h-4 w-4 mr-1 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                )}
+                {source}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       
       <div className="flex flex-wrap gap-2 mb-4">
         <div className="flex-1 min-w-[200px]">
@@ -413,9 +352,12 @@ const DataSyncContent: React.FC<{
         </div>
         
         <button 
-          className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-md"
-          onClick={() => setCurrentPage(1)} // Reset to first page when applying filters
+          className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-md flex items-center"
+          onClick={() => setCurrentPage(1)} 
         >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+          </svg>
           Filter
         </button>
       </div>
@@ -567,6 +509,501 @@ const DataSyncContent: React.FC<{
   );
 };
 
+// Security Modal Content
+const SecurityContent: React.FC<{
+  addAlert: (alert: Alert) => void;
+}> = ({ addAlert }) => {
+  const [selectedTab, setSelectedTab] = useState('overview');
+  const [isRunningAudit, setIsRunningAudit] = useState(false);
+
+  const runSecurityAudit = () => {
+    setIsRunningAudit(true);
+    
+    // Simulate audit
+    setTimeout(() => {
+      setIsRunningAudit(false);
+      
+      // Add alert about audit
+      addAlert({
+        id: `security-audit-${Date.now()}`,
+        type: 'success',
+        title: 'Security audit completed',
+        description: 'No critical vulnerabilities detected',
+        action: { 
+          text: "View Report", 
+          onClick: () => console.log('View audit report') 
+        },
+        details: 'Security audit completed successfully. 3 low-severity warnings were detected and have been logged for review.'
+      });
+    }, 2500);
+  };
+  
+  return (
+    <div>
+      <div className="mb-6 border-b">
+        <div className="flex space-x-2">
+          <button 
+            className={`px-4 py-2 font-medium text-sm ${selectedTab === 'overview' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500'}`}
+            onClick={() => setSelectedTab('overview')}
+          >
+            Overview
+          </button>
+          <button 
+            className={`px-4 py-2 font-medium text-sm ${selectedTab === 'access' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500'}`}
+            onClick={() => setSelectedTab('access')}
+          >
+            Access Control
+          </button>
+          <button 
+            className={`px-4 py-2 font-medium text-sm ${selectedTab === 'logs' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500'}`}
+            onClick={() => setSelectedTab('logs')}
+          >
+            Security Logs
+          </button>
+        </div>
+      </div>
+
+      {selectedTab === 'overview' && (
+        <>
+          <div className="flex justify-between items-center mb-4">
+            <p className="text-sm text-gray-600">Current security status and threat assessment.</p>
+            <button 
+              onClick={runSecurityAudit}
+              disabled={isRunningAudit}
+              className={`px-4 py-2 rounded-md text-sm flex items-center ${
+                isRunningAudit 
+                  ? 'bg-gray-100 text-gray-500 cursor-not-allowed' 
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
+              }`}
+            >
+              {isRunningAudit ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Running Audit...
+                </>
+              ) : (
+                <>
+                  <Shield className="w-4 h-4 mr-2" />
+                  Run Security Audit
+                </>
+              )}
+            </button>
+          </div>
+          
+          <div className="bg-green-50 border border-green-200 p-4 rounded-lg flex items-center mb-6">
+            <div className="bg-green-500 rounded-full p-2 mr-4 text-white">
+              <Shield className="h-6 w-6" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-medium">Security Status: Secure</h3>
+              <p className="text-sm text-gray-600">Last audit: Today at 8:30 AM</p>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="border rounded-lg p-4">
+              <h3 className="text-sm font-medium mb-3">Vulnerability Status</h3>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">Critical</span>
+                  <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">0</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">High</span>
+                  <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">0</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">Medium</span>
+                  <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">0</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">Low</span>
+                  <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">3</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="border rounded-lg p-4">
+              <h3 className="text-sm font-medium mb-3">Authentication</h3>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">2FA Enabled Users</span>
+                  <span className="text-sm font-medium">92%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
+                  <div className="bg-green-500 h-2 rounded-full" style={{ width: '92%' }}></div>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">Failed Login Attempts (24h)</span>
+                  <span className="text-sm font-medium">3</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">Password Policy Compliance</span>
+                  <span className="text-sm font-medium">100%</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="border rounded-lg p-4">
+              <h3 className="text-sm font-medium mb-3">Data Protection</h3>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">Encryption Status</span>
+                  <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">Active</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">Last Backup</span>
+                  <span className="text-sm">Today at 06:00 AM</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">Data Compliance</span>
+                  <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">Compliant</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <h3 className="font-medium mb-3">Recent Security Events</h3>
+          <div className="border rounded-lg overflow-hidden">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Event</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Severity</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Source</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                <tr>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">Today at 11:32 AM</td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm">Multiple failed login attempts</td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">Warning</span>
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">192.168.5.123</td>
+                </tr>
+                <tr>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">Today at 10:15 AM</td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm">New admin user created</td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">Info</span>
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">Admin User</td>
+                </tr>
+                <tr>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">Today at 8:30 AM</td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm">Security audit completed</td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">Info</span>
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">System</td>
+                </tr>
+                <tr>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">Yesterday at 5:42 PM</td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm">Suspicious file upload detected</td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">Warning</span>
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">192.168.1.42</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+
+      {selectedTab === 'access' && (
+        <div>
+          <p className="text-sm text-gray-600 mb-4">Manage access control and permissions for system users.</p>
+          
+          <div className="border rounded-lg p-4 mb-6">
+            <h3 className="font-medium mb-3">Role Permissions</h3>
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">View Data</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Edit Data</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Admin Actions</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Security</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                <tr>
+                  <td className="px-3 py-2 whitespace-nowrap">
+                    <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">System Admin</span>
+                  </td>
+                  <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  </td>
+                  <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  </td>
+                  <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  </td>
+                  <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  </td>
+                </tr>
+                <tr>
+                  <td className="px-3 py-2 whitespace-nowrap">
+                    <span className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full">Department Admin</span>
+                  </td>
+                  <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  </td>
+                  <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  </td>
+                  <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-yellow-500" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 000 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+                    </svg>
+                  </td>
+                  <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 000 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+                    </svg>
+                  </td>
+                </tr>
+                <tr>
+                  <td className="px-3 py-2 whitespace-nowrap">
+                    <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">Analytics User</span>
+                  </td>
+                  <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  </td>
+                  <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 000 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+                    </svg>
+                  </td>
+                  <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 000 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+                    </svg>
+                  </td>
+                  <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 000 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+                    </svg>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="border rounded-lg p-4">
+              <h3 className="font-medium mb-3">Two-Factor Authentication Status</h3>
+              <div className="h-64 bg-gray-50 flex items-center justify-center">
+                {/* Placeholder for 2FA chart */}
+                <p className="text-gray-400">2FA status chart would be displayed here</p>
+              </div>
+            </div>
+            
+            <div className="border rounded-lg p-4">
+              <h3 className="font-medium mb-3">Recently Modified Permissions</h3>
+              <div className="space-y-3">
+                <div className="bg-gray-50 p-3 rounded-lg">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="text-sm font-medium">Marketing Department Access</p>
+                      <p className="text-xs text-gray-500">Modified by Admin User</p>
+                    </div>
+                    <span className="text-xs text-gray-500">Today at 9:15 AM</span>
+                  </div>
+                </div>
+                <div className="bg-gray-50 p-3 rounded-lg">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="text-sm font-medium">Emily's Role Change</p>
+                      <p className="text-xs text-gray-500">Modified by Admin User</p>
+                    </div>
+                    <span className="text-xs text-gray-500">Yesterday at 2:30 PM</span>
+                  </div>
+                </div>
+                <div className="bg-gray-50 p-3 rounded-lg">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="text-sm font-medium">Finance Report Access</p>
+                      <p className="text-xs text-gray-500">Modified by Sarah Johnson</p>
+                    </div>
+                    <span className="text-xs text-gray-500">May 1, 2025</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedTab === 'logs' && (
+        <div>
+          <p className="text-sm text-gray-600 mb-4">Security event logs for system monitoring and audit.</p>
+          
+          <div className="flex flex-wrap gap-2 mb-4">
+            <div className="flex-1 min-w-[200px]">
+              <select className="w-full border rounded-md py-2 px-3 text-sm">
+                <option>All Event Types</option>
+                <option>Login Attempts</option>
+                <option>Permission Changes</option>
+                <option>Data Access</option>
+                <option>System Changes</option>
+              </select>
+            </div>
+            
+            <div className="flex-1 min-w-[200px]">
+              <select className="w-full border rounded-md py-2 px-3 text-sm">
+                <option>All Severity Levels</option>
+                <option>Critical</option>
+                <option>Warning</option>
+                <option>Info</option>
+              </select>
+            </div>
+            
+            <div className="flex-1 min-w-[200px]">
+              <input 
+                type="text" 
+                placeholder="Search logs..." 
+                className="w-full border rounded-md py-2 px-3 text-sm" 
+              />
+            </div>
+          </div>
+          
+          <div className="border rounded-lg overflow-hidden">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timestamp</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Event</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IP Address</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Severity</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                <tr>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">2025-05-02 11:32:15</td>
+                  <td className="px-4 py-3 text-sm">Multiple failed login attempts</td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">Unknown</td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">192.168.5.123</td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">Warning</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">2025-05-02 10:15:42</td>
+                  <td className="px-4 py-3 text-sm">New admin user created</td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">Admin User</td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">192.168.1.105</td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">Info</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">2025-05-02 09:58:33</td>
+                  <td className="px-4 py-3 text-sm">User permissions updated</td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">Admin User</td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">192.168.1.105</td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">Info</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">2025-05-02 08:30:17</td>
+                  <td className="px-4 py-3 text-sm">Security audit completed</td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">System</td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">127.0.0.1</td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">Info</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">2025-05-01 17:42:09</td>
+                  <td className="px-4 py-3 text-sm">Suspicious file upload detected</td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">Emily Rodriguez</td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">192.168.1.42</td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">Warning</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">2025-05-01 16:15:33</td>
+                  <td className="px-4 py-3 text-sm">User password changed</td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">Sarah Johnson</td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">192.168.1.107</td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">Info</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">2025-05-01 14:08:51</td>
+                  <td className="px-4 py-3 text-sm">Unauthorized API access attempt</td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">Unknown</td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">203.0.113.42</td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <span className="bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full">Critical</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
+          <div className="flex justify-between items-center mt-4">
+            <div className="text-sm text-gray-500">
+              Showing 1-7 of 1,285 events
+            </div>
+            
+            <div className="flex">
+              <button className="border rounded-l px-3 py-1 text-sm hover:bg-gray-100">
+                &lt;
+              </button>
+              <button className="border-t border-b border-r px-3 py-1 text-sm bg-blue-50 text-blue-600">
+                1
+              </button>
+              <button className="border-t border-b border-r px-3 py-1 text-sm hover:bg-gray-100">
+                2
+              </button>
+              <button className="border-t border-b border-r px-3 py-1 text-sm hover:bg-gray-100">
+                3
+              </button>
+              <button className="border-t border-b border-r px-3 py-1 text-sm">
+                ...
+              </button>
+              <button className="border-t border-b border-r px-3 py-1 text-sm hover:bg-gray-100">
+                129
+              </button>
+              <button className="border-t border-b border-r rounded-r px-3 py-1 text-sm hover:bg-gray-100">
+                &gt;
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // Active Sessions Modal Content with props from parent
 const ActiveSessionsContent: React.FC<{
   users: User[];
@@ -584,6 +1021,50 @@ const ActiveSessionsContent: React.FC<{
   addAlert
 }) => {
   const [viewType, setViewType] = useState('users'); // 'users' or 'sessions'
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedRole, setSelectedRole] = useState('All Roles');
+  const [selectedDepartment, setSelectedDepartment] = useState('All Departments');
+  
+  // Get filtered users
+  const filteredUsers = users.filter(user => {
+    if (searchQuery && !user.name.toLowerCase().includes(searchQuery.toLowerCase()) && 
+        !user.email.toLowerCase().includes(searchQuery.toLowerCase())) {
+      return false;
+    }
+    
+    if (selectedRole !== 'All Roles' && user.role !== selectedRole) {
+      return false;
+    }
+    
+    if (selectedDepartment !== 'All Departments' && user.department !== selectedDepartment) {
+      return false;
+    }
+    
+    return true;
+  });
+  
+  // Get filtered sessions
+  const filteredSessions = sessions.filter(session => {
+    if (selectedRole !== 'All Roles' && session.role !== selectedRole) {
+      return false;
+    }
+    
+    if (selectedDepartment !== 'All Departments' && session.department !== selectedDepartment) {
+      return false;
+    }
+    
+    if (searchQuery && !session.ipAddress.includes(searchQuery)) {
+      return false;
+    }
+    
+    return true;
+  });
+  
+  // Get all available roles
+  const allRoles = ['All Roles', ...new Set(users.map(user => user.role))];
+  
+  // Get all available departments
+  const allDepartments = ['All Departments', ...new Set(users.map(user => user.department))];
   
   // Get role style class
   const getRoleStyle = (role: string) => {
@@ -629,9 +1110,7 @@ const ActiveSessionsContent: React.FC<{
           <h3 className="text-sm text-gray-600 mb-1">Total Active Sessions</h3>
           <p className="text-2xl font-semibold mb-1">{users.length}</p>
           <p className="text-xs text-green-600 flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
-            </svg>
+            <ArrowUp className="h-4 w-4 mr-1" />
             {users.length > 0 ? `${Math.round((users.length / 8) * 100)}% of admin users` : '0% of admin users'}
           </p>
         </div>
@@ -658,15 +1137,13 @@ const ActiveSessionsContent: React.FC<{
           <h3 className="text-sm text-gray-600 mb-1">Avg. Session Duration</h3>
           <p className="text-2xl font-semibold mb-1">38m</p>
           <p className="text-xs text-red-600 flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-            </svg>
+            <ArrowDown className="h-4 w-4 mr-1" />
             5% from yesterday
           </p>
         </div>
       </div>
       
-      <div className="mb-4">
+      <div className="flex flex-col md:flex-row items-center justify-between space-y-3 md:space-y-0 md:space-x-4 mb-4">
         <div className="flex space-x-4">
           <button
             className={`px-4 py-2 text-sm font-medium ${viewType === 'users' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500'}`}
@@ -681,13 +1158,43 @@ const ActiveSessionsContent: React.FC<{
             Session View
           </button>
         </div>
+        
+        <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2 w-full md:w-auto">
+          <input
+            type="text"
+            placeholder={viewType === 'users' ? "Search by name or email..." : "Search by IP..."}
+            className="border rounded-md px-3 py-2 text-sm w-full md:w-48"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          
+          <select
+            className="border rounded-md px-3 py-2 text-sm w-full md:w-auto"
+            value={selectedRole}
+            onChange={(e) => setSelectedRole(e.target.value)}
+          >
+            {allRoles.map(role => (
+              <option key={role} value={role}>{role}</option>
+            ))}
+          </select>
+          
+          <select
+            className="border rounded-md px-3 py-2 text-sm w-full md:w-auto"
+            value={selectedDepartment}
+            onChange={(e) => setSelectedDepartment(e.target.value)}
+          >
+            {allDepartments.map(department => (
+              <option key={department} value={department}>{department}</option>
+            ))}
+          </select>
+        </div>
       </div>
       
       {viewType === 'users' ? (
-        <div className="overflow-x-auto">
-          {users.length > 0 ? (
+        <div className="overflow-x-auto rounded-lg border">
+          {filteredUsers.length > 0 ? (
             <table className="min-w-full divide-y divide-gray-200">
-              <thead>
+              <thead className="bg-gray-50">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     User
@@ -707,7 +1214,7 @@ const ActiveSessionsContent: React.FC<{
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {users.map(user => (
+                {filteredUsers.map(user => (
                   <tr key={user.id}>
                     <td className="px-4 py-4">
                       <div className="flex items-center">
@@ -746,16 +1253,16 @@ const ActiveSessionsContent: React.FC<{
               </tbody>
             </table>
           ) : (
-            <div className="text-center py-8 bg-white border rounded-lg">
-              <p className="text-gray-500">No active users</p>
+            <div className="text-center py-8 bg-white">
+              <p className="text-gray-500">No active users match your filters</p>
             </div>
           )}
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          {sessions.length > 0 ? (
+        <div className="overflow-x-auto rounded-lg border">
+          {filteredSessions.length > 0 ? (
             <table className="min-w-full divide-y divide-gray-200">
-              <thead>
+              <thead className="bg-gray-50">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Role
@@ -775,7 +1282,7 @@ const ActiveSessionsContent: React.FC<{
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {sessions.map(session => (
+                {filteredSessions.map(session => (
                   <tr key={session.id}>
                     <td className="px-4 py-4 whitespace-nowrap">
                       <span className={`px-2 py-1 text-xs font-medium rounded-full ${getRoleStyle(session.role)}`}>
@@ -809,8 +1316,8 @@ const ActiveSessionsContent: React.FC<{
               </tbody>
             </table>
           ) : (
-            <div className="text-center py-8 bg-white border rounded-lg">
-              <p className="text-gray-500">No active sessions</p>
+            <div className="text-center py-8 bg-white">
+              <p className="text-gray-500">No active sessions match your filters</p>
             </div>
           )}
         </div>
@@ -824,8 +1331,9 @@ const ActiveSessionsContent: React.FC<{
             users.length === 0 
               ? 'bg-red-300 cursor-not-allowed' 
               : 'bg-red-600 hover:bg-red-700'
-          } text-white font-medium py-2 px-4 rounded`}
+          } text-white font-medium py-2 px-4 rounded flex items-center`}
         >
+          <AlertTriangle className="h-4 w-4 mr-2" />
           Terminate All Sessions
         </button>
         
@@ -846,25 +1354,47 @@ interface StatusCardProps {
   value: string;
   onClick: () => void;
   color: string;
+  trend?: {
+    value: string;
+    direction: 'up' | 'down' | 'neutral';
+    description: string;
+  };
 }
 
-const StatusCard: React.FC<StatusCardProps> = ({ icon, title, value, onClick, color }) => {
+const StatusCard: React.FC<StatusCardProps> = ({ icon, title, value, onClick, color, trend }) => {
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <div className="flex items-start mb-6">
+    <div className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow duration-300">
+      <div className="flex items-start mb-4">
         <div className={`rounded-lg p-3 ${color}`}>
           {icon}
         </div>
-        <div className="ml-4">
+        <div className="ml-4 flex-1">
           <h3 className="text-sm text-gray-600">{title}</h3>
           <p className="text-xl font-semibold">{value}</p>
+          
+          {trend && (
+            <p className={`text-xs flex items-center mt-1 ${
+              trend.direction === 'up' ? 'text-green-600' : 
+              trend.direction === 'down' ? 'text-red-600' : 'text-gray-500'
+            }`}>
+              {trend.direction === 'up' ? (
+                <ArrowUp className="h-3 w-3 mr-1" />
+              ) : trend.direction === 'down' ? (
+                <ArrowDown className="h-3 w-3 mr-1" />
+              ) : null}
+              {trend.value} {trend.description}
+            </p>
+          )}
         </div>
       </div>
       <button 
         onClick={onClick}
-        className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+        className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center"
       >
-        View {title.toLowerCase()}
+        View details
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+        </svg>
       </button>
     </div>
   );
@@ -888,74 +1418,51 @@ const SystemOverview: React.FC<SystemOverviewProps> = ({
   const closeModal = () => {
     setActiveModal(null);
   };
-
-  // Handle health check completion
-  const handleHealthCheckComplete = () => {
-    // Update timestamp in the UI
-    const now = new Date();
-    const hours = now.getHours();
-    const minutes = now.getMinutes();
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    const formattedHours = hours % 12 || 12;
-    const formattedMinutes = minutes < 10 ? `0${minutes}` : minutes;
-    const timeString = `${formattedHours}:${formattedMinutes} ${ampm}`;
-    
-    // Other health check logic...
-  };
   
   return (
     <div>
       <h2 className="text-xl font-semibold mb-4">System Overview</h2>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <StatusCard 
-          icon={
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-          }
-          title="System Status"
-          value="Operational"
-          onClick={() => openModal('systemHealth')}
-          color="bg-emerald-500"
-        />
-        
-        <StatusCard 
-          icon={
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          }
+          icon={<Clock className="h-6 w-6 text-white" />}
           title="Data Freshness"
           value="1 hour ago"
           onClick={() => openModal('dataSync')}
           color="bg-blue-500"
+          trend={{
+            value: "38%",
+            direction: "up",
+            description: "faster sync"
+          }}
         />
         
         <StatusCard 
-          icon={
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-            </svg>
-          }
+          icon={<Users className="h-6 w-6 text-white" />}
           title="Active Users"
           value={activeUserCount.toString()}
           onClick={() => openModal('activeSessions')}
           color="bg-purple-500"
+          trend={{
+            value: "25%",
+            direction: "up", 
+            description: "from yesterday"
+          }}
+        />
+        
+        <StatusCard 
+          icon={<Shield className="h-6 w-6 text-white" />}
+          title="Security"
+          value="Secure"
+          onClick={() => openModal('security')}
+          color="bg-amber-500"
+          trend={{
+            value: "3",
+            direction: "down",
+            description: "warnings cleared"
+          }}
         />
       </div>
-      
-      {/* System Health Modal */}
-      <Modal 
-        isOpen={activeModal === 'systemHealth'} 
-        onClose={closeModal}
-        title="System Health"
-      >
-        <SystemHealthContent 
-          onHealthCheck={handleHealthCheckComplete} 
-          addAlert={addAlert}
-        />
-      </Modal>
       
       {/* Data Sync History Modal */}
       <Modal 
@@ -980,6 +1487,15 @@ const SystemOverview: React.FC<SystemOverviewProps> = ({
           onClose={closeModal}
           addAlert={addAlert}
         />
+      </Modal>
+      
+      {/* Security Modal */}
+      <Modal 
+        isOpen={activeModal === 'security'} 
+        onClose={closeModal}
+        title="Security Center"
+      >
+        <SecurityContent addAlert={addAlert} />
       </Modal>
     </div>
   );

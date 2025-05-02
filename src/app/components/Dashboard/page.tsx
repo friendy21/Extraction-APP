@@ -170,8 +170,8 @@ const DashboardPage: React.FC = () => {
     }
   };
 
-  // Get the current user for the header
-  const currentUser = users.find(user => user.id === 'user1');
+  // Get the current user for the header, defaulting to empty values if not found
+  const currentUser = users.find(user => user.id === 'user1') || { name: '', avatar: '' };
 
   return (
     <DashboardLayout 

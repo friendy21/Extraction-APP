@@ -66,12 +66,6 @@ export default function Landing() {
                   <ArrowRight className="h-4 w-4" />
                 </Button>
                 
-                <Button
-                  variant="outline"
-                  className="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-5 py-2.5 rounded-md"
-                >
-                  Learn More
-                </Button>
               </div>
             </div>
             
