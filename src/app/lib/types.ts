@@ -1,4 +1,5 @@
-// lib/types.ts
+import { ReactNode } from 'react';
+
 export interface Employee {
   id: number;
   name: string;
@@ -6,19 +7,15 @@ export interface Employee {
   department: string;
   position: string;
   status: 'Included' | 'Excluded';
+  profilePicture?: string;
   location?: string;
   workModel?: string;
   age?: number;
   gender?: string;
   ethnicity?: string;
   timeZone?: string;
-  tenure?: string;
   language?: string;
-  profilePicture?: string;
-  workActivity?: {
-    avgHours: number;
-    weeklyHours: number[];
-  };
+  phone?: string;
 }
 
 export interface DepartmentDistribution {
@@ -26,12 +23,20 @@ export interface DepartmentDistribution {
   count: number;
 }
 
-export interface LocationDistribution {
+export interface ExtractedField {
   name: string;
-  count: number;
+  source: string;
+  dataType: string;
+  coverage: number;
+  status: string;
 }
 
-export interface WorkModelDistribution {
+export interface DataSource {
   name: string;
-  count: number;
+  type: string;
+  fieldsExtracted: number;
+  lastSync: string;
+  status: string;
+  color: string;
+  icon: ReactNode;
 }
