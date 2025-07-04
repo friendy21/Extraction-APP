@@ -6,10 +6,12 @@ import { Card, CardContent } from "../../ui/card";
 import { AlertCircle, ChevronLeft, CheckCircle } from "lucide-react";
 import { useRouter } from 'next/navigation';
 import { useStep } from '../StepContext';
+import useSetupStatus from '@/hooks/useSetupStatus';
 
 const ReviewConfirmationPage: React.FC = () => {
     const router = useRouter();
     const { setCurrentStep } = useStep();
+    const { markComplete } = useSetupStatus();
     const [isDeploying, setIsDeploying] = useState(false);
     
     const [checkboxes, setCheckboxes] = useState({
@@ -35,6 +37,7 @@ const ReviewConfirmationPage: React.FC = () => {
         // Simulate deployment
         setTimeout(() => {
             setIsDeploying(false);
+            markComplete();
             router.push('/components/Dashboard');
         }, 2000);
     };
