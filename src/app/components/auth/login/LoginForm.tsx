@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import useSetupStatus from "@/hooks/useSetupStatus";
 import Link from "next/link";
 import { loginSchema, type LoginFormValues } from "./../../../lib/validation";
 import {Input} from "@/app/components/ui/input";
@@ -14,6 +15,7 @@ export default function LoginForm() {
   const [authError, setAuthError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const { isSetupComplete } = useSetupStatus();
   
   const {
     register,
@@ -45,8 +47,11 @@ export default function LoginForm() {
       }
       
       // If no error, login was successful
-      // Redirect to landing page
-      router.push('/components/FirstTimeSetUp/Landing');
+      if (isSetupComplete) {
+        router.push('/components/Dashboard');
+      } else {
+        router.push('/components/FirstTimeSetUp/Landing');
+      }
       
     } catch (error) {
       console.error("Login error:", error);
